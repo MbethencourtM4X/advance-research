@@ -17,3 +17,9 @@ export default function Home() {
     </main>
   );
 }
+
+// Add to imports
+import LiveTenders from './components/LiveTenders';
+
+// Add to Home component JSX before Footer:
+<LiveTenders />
