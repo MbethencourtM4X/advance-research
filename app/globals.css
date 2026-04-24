@@ -203,3 +203,109 @@ th, td {
   padding: 0.75rem;
   text-align: left;
 }
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Apply animations */
+.section, header, main > div > div {
+  animation: slideIn 0.3s ease-out;
+}
+
+button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 102, 204, 0.3) !important;
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+input, select {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1) !important;
+}
+
+/* Loading state */
+.loading {
+  animation: pulse 2s infinite;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Card hover effects */
+div[style*="borderRadius"] {
+  transition: all 0.2s ease;
+}
+
+div[style*="borderRadius"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Badge animations */
+.badge {
+  animation: slideIn 0.4s ease-out;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  main {
+    padding: 1rem;
+  }
+  
+  header {
+    padding: 1.5rem 1rem !important;
+  }
+  
+  h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  h2 {
+    font-size: 1.2rem !important;
+  }
+}
+
+/* Dark mode support (optional future) */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #0f1419;
+    color: #e8eef2;
+  }
+  
+  .section, div[style*="background: white"] {
+    background: #1a1f2e !important;
+  }
+}
