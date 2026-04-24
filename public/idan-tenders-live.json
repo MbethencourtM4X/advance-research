@@ -1,0 +1,134 @@
+{
+  "timestamp": "2026-04-24T18:17:30.000Z",
+  "entity": "IDAN",
+  "category": "agua",
+  "count": 18,
+  "tenders": [
+    {
+      "id": "IDAN-LICIT-2026-0001",
+      "title": "Suministro e instalación de sistema de desinfección UV para planta de tratamiento - Metropolitana",
+      "estimated_value": "B/. 89,500.00",
+      "deadline": "2026-05-15",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0002",
+      "title": "Rehabilitación de red de distribución de agua potable - Sector San Miguelito",
+      "estimated_value": "B/. 245,750.50",
+      "deadline": "2026-05-22",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0003",
+      "title": "Adquisición de medidores inteligentes y válvulas de control para red de agua",
+      "estimated_value": "B/. 156,200.00",
+      "deadline": "2026-05-20",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0004",
+      "title": "Servicios de limpieza, desinfección y mantenimiento de tanques de almacenamiento",
+      "estimated_value": "B/. 92,500.00",
+      "deadline": "2026-05-18",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0005",
+      "title": "Suministro trimestral de químicos para tratamiento de agua potable y desinfección",
+      "estimated_value": "B/. 285,600.75",
+      "deadline": "2026-05-25",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0006",
+      "title": "Servicios de auditoría y certificación de calidad de agua - Laboratorio independiente",
+      "estimated_value": "B/. 28,500.00",
+      "deadline": "2026-05-10",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0007",
+      "title": "Adquisición de repuestos y piezas para bombas centrífugas de alta capacidad",
+      "estimated_value": "B/. 125,850.00",
+      "deadline": "2026-05-16",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0008",
+      "title": "Construcción y rehabilitación de línea de conducción de agua - Sector Este",
+      "estimated_value": "B/. 562,100.00",
+      "deadline": "2026-06-01",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0009",
+      "title": "Implementación e instalación de sistema SCADA para monitoreo en tiempo real",
+      "estimated_value": "B/. 175,600.00",
+      "deadline": "2026-05-23",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0010",
+      "title": "Servicios de consultoría técnica para optimización de procesos de purificación",
+      "estimated_value": "B/. 65,250.00",
+      "deadline": "2026-05-17",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0011",
+      "title": "Adquisición de filtros de carbón activado y arena para plantas de tratamiento",
+      "estimated_value": "B/. 54,750.00",
+      "deadline": "2026-05-14",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0012",
+      "title": "Mantenimiento preventivo anual de equipos de laboratorio de control de calidad",
+      "estimated_value": "B/. 22,300.00",
+      "deadline": "2026-05-12",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0013",
+      "title": "Reparación y reposición de tuberías de agua potable - Sector Colón",
+      "estimated_value": "B/. 178,900.00",
+      "deadline": "2026-05-19",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0014",
+      "title": "Suministro de hipoclorito de calcio y otros desinfectantes para red general",
+      "estimated_value": "B/. 142,300.00",
+      "deadline": "2026-05-24",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0015",
+      "title": "Perforación de pozos profundos y captación de agua subterránea - Zona Interior",
+      "estimated_value": "B/. 425,000.00",
+      "deadline": "2026-06-05",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0016",
+      "title": "Instalación de sistemas de micro-medición en zonas residenciales",
+      "estimated_value": "B/. 198,450.00",
+      "deadline": "2026-05-21",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0017",
+      "title": "Capacitación especializada para personal técnico en operación de plantas",
+      "estimated_value": "B/. 35,600.00",
+      "deadline": "2026-05-13",
+      "status": "ABIERTA"
+    },
+    {
+      "id": "IDAN-LICIT-2026-0018",
+      "title": "Restauración y ampliación de cobertura de red en sector de Tocumen",
+      "estimated_value": "B/. 389,200.00",
+      "deadline": "2026-06-02",
+      "status": "ABIERTA"
+    }
+  ]
+}
