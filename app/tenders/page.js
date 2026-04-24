@@ -12,8 +12,9 @@ export default function TendersPage() {
   const [advancedFilters, setAdvancedFilters] = useState({
     valueMin: 0,
     valueMax: 1000000,
-    daysUrgency: 'all', // all, urgent (< 10 days), soon (10-20 days), later (> 20 days)
-    projectType: 'all' // all, infrastructure, equipment, services, consulting
+    daysUrgency: 'all',
+    projectType: 'all',
+    searchQuery: ''
   });
   const { language } = useLanguage();
   const t = translations[language];
@@ -24,7 +25,7 @@ export default function TendersPage() {
       .then(data => {
         setTenders((data.tenders || []).map(tender => ({
           ...tender,
-          url: generateTenderUrl(tender.id),
+          url: `https://www.panamacompra.gob.pa/licitacion/${tender.id}`,
           projectType: classifyProjectType(tender.title),
           daysRemaining: calculateDaysRemaining(tender.deadline),
           numericValue: parseValue(tender.estimated_value)
@@ -36,10 +37,6 @@ export default function TendersPage() {
     const saved = localStorage.getItem('tender-decisions');
     if (saved) setDecisions(JSON.parse(saved));
   }, []);
-
-  const generateTenderUrl = (tenderId) => {
-    return `https://www.panamacompra.gob.pa/licitacion/${tenderId}`;
-  };
 
   const parseValue = (valueStr) => {
     const num = parseFloat(valueStr.replace(/[^\d.]/g, ''));
@@ -55,7 +52,7 @@ export default function TendersPage() {
 
   const classifyProjectType = (title) => {
     const lower = title.toLowerCase();
-    if (lower.includes('construcción') || lower.includes('rehabilitación') || lower.includes('línea de conducción')) return 'infrastructure';
+    if (lower.includes('construcción') || lower.includes('rehabilitación') || lower.includes('línea')) return 'infrastructure';
     if (lower.includes('equipo') || lower.includes('medidor') || lower.includes('válvula') || lower.includes('bomba') || lower.includes('repuesto')) return 'equipment';
     if (lower.includes('limpieza') || lower.includes('mantenimiento') || lower.includes('desinfección') || lower.includes('servicio')) return 'services';
     if (lower.includes('consultoría') || lower.includes('auditoría') || lower.includes('certificación')) return 'consulting';
@@ -80,13 +77,11 @@ export default function TendersPage() {
     return tenders.filter(t => {
       const decision = decisions[t.id];
       
-      // Basic filter (yes/no/pending/all)
       if (filter === 'yes' && decision?.choice !== 'yes') return false;
       if (filter === 'no' && decision?.choice !== 'no') return false;
       if (filter === 'pending' && decision?.choice) return false;
       if (filter === 'all' && decision?.choice === 'no') return false;
 
-      // Advanced filters
       if (t.numericValue < advancedFilters.valueMin || t.numericValue > advancedFilters.valueMax) return false;
 
       if (advancedFilters.daysUrgency !== 'all') {
@@ -96,6 +91,8 @@ export default function TendersPage() {
       }
 
       if (advancedFilters.projectType !== 'all' && t.projectType !== advancedFilters.projectType) return false;
+
+      if (advancedFilters.searchQuery && !t.title.toLowerCase().includes(advancedFilters.searchQuery.toLowerCase())) return false;
 
       return true;
     });
@@ -109,92 +106,66 @@ export default function TendersPage() {
   };
 
   const filtered = getFilteredTenders();
+  const urgentCount = filtered.filter(t => t.daysRemaining < 7).length;
 
   return (
-    <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
-      <header style={{
-        background: 'linear-gradient(135deg, #0066cc 0%, #00a3e0 100%)',
-        color: 'white',
-        padding: '2rem',
-        borderRadius: '8px',
-        marginBottom: '2rem'
-      }}>
-        <h1>📋 {t.tenders.title}</h1>
-        <p>{t.tenders.subtitle}</p>
+    <main className="tenders-page">
+      <header className="tenders-header">
+        <h1>Dashboard de Licitaciones IDAN</h1>
+        <p>Rastreo de oportunidades de agua del gobierno de Panamá</p>
       </header>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-        gap: '1rem',
-        marginBottom: '2rem'
-      }}>
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', borderLeft: '4px solid #0066cc', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <div style={{ color: '#666', fontSize: '0.9rem' }}>Total</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#0066cc' }}>{stats.total}</div>
+      <section className="stats-section">
+        <div className="stats-grid">
+          <div className="stat-card primary">
+            <div className="stat-label">Total</div>
+            <div className="stat-number">{stats.total}</div>
+          </div>
+          <div className="stat-card success">
+            <div className="stat-label">Interesantes</div>
+            <div className="stat-number">{stats.interested}</div>
+          </div>
+          <div className="stat-card warning">
+            <div className="stat-label">Descartadas</div>
+            <div className="stat-number">{stats.notInterested}</div>
+          </div>
+          <div className="stat-card pending">
+            <div className="stat-label">Pendientes</div>
+            <div className="stat-number">{stats.pending}</div>
+          </div>
+          {urgentCount > 0 && (
+            <div className="stat-card urgent">
+              <div className="stat-label">Urgentes (&lt; 7 días)</div>
+              <div className="stat-number">{urgentCount}</div>
+            </div>
+          )}
         </div>
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', borderLeft: '4px solid #28a745', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <div style={{ color: '#666', fontSize: '0.9rem' }}>Interested</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#28a745' }}>{stats.interested}</div>
-        </div>
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', borderLeft: '4px solid #d32f2f', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <div style={{ color: '#666', fontSize: '0.9rem' }}>Not Int.</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#d32f2f' }}>{stats.notInterested}</div>
-        </div>
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', borderLeft: '4px solid #ff9800', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <div style={{ color: '#666', fontSize: '0.9rem' }}>Pending</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ff9800' }}>{stats.pending}</div>
-        </div>
-      </div>
+      </section>
 
-      <div style={{
-        background: 'white',
-        padding: '1.5rem',
-        borderRadius: '8px',
-        marginBottom: '2rem',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-      }}>
-        <h3>Basic Filter:</h3>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-          {[
-            { v: 'all', l: 'All', c: '#666' },
-            { v: 'pending', l: 'Pending', c: '#ff9800' },
-            { v: 'yes', l: '✅ Yes', c: '#28a745' },
-            { v: 'no', l: '❌ No', c: '#d32f2f' }
-          ].map(f => (
-            <button
-              key={f.v}
-              onClick={() => setFilter(f.v)}
-              style={{
-                padding: '0.5rem 1rem',
-                border: filter === f.v ? `2px solid ${f.c}` : '1px solid #ddd',
-                background: filter === f.v ? f.c : 'white',
-                color: filter === f.v ? 'white' : f.c,
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: filter === f.v ? 'bold' : 'normal'
-              }}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
-
-        <h3>Advanced Filters:</h3>
+      <section className="filters-section">
+        <h2>Filtros</h2>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#333' }}>
-              Value Range (B/.)
-            </label>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div className="filters-container">
+          <div className="filter-group">
+            <label>Buscar por título</label>
+            <input 
+              type="text" 
+              placeholder="Ej: desinfección, medidores, construcción..."
+              value={advancedFilters.searchQuery}
+              onChange={(e) => setAdvancedFilters({...advancedFilters, searchQuery: e.target.value})}
+              className="search-input"
+            />
+          </div>
+
+          <div className="filter-group">
+            <label>Rango de Valor (B/.)</label>
+            <div className="filter-inputs">
               <input 
                 type="number" 
                 min="0" 
                 max="1000000"
                 value={advancedFilters.valueMin}
                 onChange={(e) => setAdvancedFilters({...advancedFilters, valueMin: parseInt(e.target.value) || 0})}
-                style={{ width: '80px', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
               />
               <span>–</span>
               <input 
@@ -203,137 +174,625 @@ export default function TendersPage() {
                 max="1000000"
                 value={advancedFilters.valueMax}
                 onChange={(e) => setAdvancedFilters({...advancedFilters, valueMax: parseInt(e.target.value) || 1000000})}
-                style={{ width: '80px', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
               />
             </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#333' }}>
-              Deadline Urgency
-            </label>
+          <div className="filter-group">
+            <label>Urgencia (Deadline)</label>
             <select 
               value={advancedFilters.daysUrgency}
               onChange={(e) => setAdvancedFilters({...advancedFilters, daysUrgency: e.target.value})}
-              style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
             >
-              <option value="all">All</option>
-              <option value="urgent">Very Soon (&lt; 10 days)</option>
-              <option value="soon">Soon (10-20 days)</option>
-              <option value="later">Later (&gt; 20 days)</option>
+              <option value="all">Todas</option>
+              <option value="urgent">Muy Urgente (menos de 10 días)</option>
+              <option value="soon">Próximas (10-20 días)</option>
+              <option value="later">Con Tiempo (más de 20 días)</option>
             </select>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#333' }}>
-              Project Type
-            </label>
+          <div className="filter-group">
+            <label>Tipo de Proyecto</label>
             <select 
               value={advancedFilters.projectType}
               onChange={(e) => setAdvancedFilters({...advancedFilters, projectType: e.target.value})}
-              style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
             >
-              <option value="all">All Types</option>
-              <option value="infrastructure">Infrastructure</option>
-              <option value="equipment">Equipment</option>
-              <option value="services">Services</option>
-              <option value="consulting">Consulting</option>
+              <option value="all">Todos los Tipos</option>
+              <option value="infrastructure">Infraestructura</option>
+              <option value="equipment">Equipos</option>
+              <option value="services">Servicios</option>
+              <option value="consulting">Consultoría</option>
             </select>
           </div>
         </div>
-      </div>
+
+        <div className="decision-filter">
+          <span>Filtrar por decisión:</span>
+          <div className="filter-buttons">
+            {[
+              { v: 'all', l: 'Todos', c: 'primary' },
+              { v: 'pending', l: 'Pendientes', c: 'pending' },
+              { v: 'yes', l: 'Interesantes', c: 'success' },
+              { v: 'no', l: 'Descartadas', c: 'danger' }
+            ].map(f => (
+              <button
+                key={f.v}
+                onClick={() => setFilter(f.v)}
+                className={`filter-btn ${f.c} ${filter === f.v ? 'active' : ''}`}
+              >
+                {f.l}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {loading ? (
-        <p>Loading...</p>
+        <div className="loading">
+          <div className="loading-spinner"></div>
+          <p>Cargando licitaciones...</p>
+        </div>
       ) : filtered.length > 0 ? (
-        <div>
-          <p style={{ color: '#666', marginBottom: '1rem' }}>Showing {filtered.length} of {tenders.length} tenders</p>
-          <div style={{ display: 'grid', gap: '1rem' }}>
+        <section className="tenders-section">
+          <div className="tenders-summary">
+            Mostrando {filtered.length} de {tenders.length} licitaciones
+          </div>
+          <div className="tenders-list">
             {filtered.map(tender => (
-              <div key={tender.id} style={{
-                background: 'white',
-                padding: '1.5rem',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                borderLeft: decisions[tender.id]?.choice === 'yes' ? '4px solid #28a745' : decisions[tender.id]?.choice === 'no' ? '4px solid #d32f2f' : '4px solid #ddd'
-              }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px', gap: '1rem', alignItems: 'start' }}>
+              <article key={tender.id} className={`tender-card ${decisions[tender.id]?.choice ? 'decided-' + decisions[tender.id].choice : 'undecided'}`}>
+                <div className="tender-header">
                   <div>
-                    <h3 style={{ margin: '0 0 1rem 0', color: '#333' }}>{tender.title}</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-                      <div>
-                        <div style={{ color: '#999', fontSize: '0.85rem' }}>ID</div>
-                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{tender.id}</div>
+                    <h3>{tender.title}</h3>
+                    <div className="tender-id">{tender.id}</div>
+                  </div>
+                  <div className="tender-decision">
+                    {decisions[tender.id]?.choice === 'yes' && <span className="badge success">Interesante</span>}
+                    {decisions[tender.id]?.choice === 'no' && <span className="badge danger">Descartada</span>}
+                  </div>
+                </div>
+
+                <div className="tender-body">
+                  <div className="tender-grid">
+                    <div className="tender-info">
+                      <div className="info-item">
+                        <span className="label">Valor</span>
+                        <span className="value">{tender.estimated_value}</span>
                       </div>
-                      <div>
-                        <div style={{ color: '#999', fontSize: '0.85rem' }}>Value</div>
-                        <div style={{ fontWeight: 'bold', color: '#28a745' }}>{tender.estimated_value}</div>
+                      <div className="info-item">
+                        <span className="label">Deadline</span>
+                        <span className="value deadline">{tender.deadline}</span>
+                        <span className="days {tender.daysRemaining < 7 ? 'urgent' : ''}">{tender.daysRemaining} días</span>
                       </div>
-                      <div>
-                        <div style={{ color: '#999', fontSize: '0.85rem' }}>Deadline</div>
-                        <div style={{ fontWeight: 'bold', color: '#ff9800' }}>{tender.deadline} ({tender.daysRemaining}d)</div>
-                      </div>
-                      <div>
-                        <div style={{ color: '#999', fontSize: '0.85rem' }}>Type</div>
-                        <div style={{ fontWeight: 'bold', textTransform: 'capitalize' }}>{tender.projectType}</div>
+                      <div className="info-item">
+                        <span className="label">Tipo</span>
+                        <span className="value category">{tender.projectType}</span>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="tender-cta">
                     <a 
                       href={tender.url} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      style={{
-                        display: 'inline-block',
-                        padding: '0.5rem 1rem',
-                        background: '#0066cc',
-                        color: 'white',
-                        textDecoration: 'none',
-                        borderRadius: '4px',
-                        fontSize: '0.9rem',
-                        fontWeight: 'bold'
-                      }}
+                      className="btn-link"
                     >
-                      → View on IDAN Portal
+                      Ver en Panamá Compra
                     </a>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
-                    <button
-                      onClick={() => toggleDecision(tender.id, 'yes')}
-                      style={{
-                        padding: '0.75rem 1rem',
-                        background: decisions[tender.id]?.choice === 'yes' ? '#28a745' : '#f1f1f1',
-                        color: decisions[tender.id]?.choice === 'yes' ? 'white' : '#333',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      ✅ Sí
-                    </button>
-                    <button
-                      onClick={() => toggleDecision(tender.id, 'no')}
-                      style={{
-                        padding: '0.75rem 1rem',
-                        background: decisions[tender.id]?.choice === 'no' ? '#d32f2f' : '#f1f1f1',
-                        color: decisions[tender.id]?.choice === 'no' ? 'white' : '#333',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      ❌ No
-                    </button>
-                  </div>
                 </div>
-              </div>
+
+                <div className="tender-actions">
+                  <button
+                    onClick={() => toggleDecision(tender.id, 'yes')}
+                    className={`action-btn success ${decisions[tender.id]?.choice === 'yes' ? 'active' : ''}`}
+                    title="Marcar como interesante"
+                  >
+                    Interesante
+                  </button>
+                  <button
+                    onClick={() => toggleDecision(tender.id, 'no')}
+                    className={`action-btn danger ${decisions[tender.id]?.choice === 'no' ? 'active' : ''}`}
+                    title="Marcar como descartada"
+                  >
+                    Descartar
+                  </button>
+                </div>
+              </article>
             ))}
           </div>
-        </div>
+        </section>
       ) : (
-        <p style={{ color: '#666', textAlign: 'center', padding: '2rem' }}>No tenders match your filters</p>
+        <section className="empty-state">
+          <div className="empty-content">
+            <div className="empty-icon">Búsqueda sin resultados</div>
+            <p>No hay licitaciones que coincidan con tus filtros. Intenta ajustar los criterios.</p>
+          </div>
+        </section>
       )}
+
+      <style jsx>{`
+        .tenders-page {
+          background: var(--light);
+        }
+
+        .tenders-header {
+          background: linear-gradient(135deg, var(--primary) 0%, #0066cc 100%);
+          color: white;
+          padding: 3rem 2rem;
+          text-align: center;
+        }
+
+        .tenders-header h1 {
+          font-family: 'Oswald', sans-serif;
+          font-size: 2rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .tenders-header p {
+          font-size: 1.1rem;
+          opacity: 0.95;
+        }
+
+        .stats-section {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 2rem;
+        }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+          gap: 1rem;
+        }
+
+        .stat-card {
+          padding: 1.5rem;
+          border-radius: 8px;
+          color: white;
+          text-align: center;
+          animation: slideIn 0.3s ease-out;
+        }
+
+        .stat-card.primary {
+          background: linear-gradient(135deg, var(--primary), #0066cc);
+        }
+
+        .stat-card.success {
+          background: linear-gradient(135deg, var(--success), #12b86f);
+        }
+
+        .stat-card.warning {
+          background: linear-gradient(135deg, var(--warning), #f59e0b);
+        }
+
+        .stat-card.pending {
+          background: linear-gradient(135deg, #6B7280, #9CA3AF);
+        }
+
+        .stat-card.urgent {
+          background: linear-gradient(135deg, var(--error), #ef4444);
+        }
+
+        .stat-label {
+          font-size: 0.85rem;
+          opacity: 0.9;
+          margin-bottom: 0.5rem;
+        }
+
+        .stat-number {
+          font-family: 'Oswald', sans-serif;
+          font-size: 2rem;
+          font-weight: 700;
+        }
+
+        .filters-section {
+          max-width: 1200px;
+          margin: 0 auto 2rem;
+          padding: 0 2rem;
+        }
+
+        .filters-section h2 {
+          font-family: 'Oswald', sans-serif;
+          font-size: 1.5rem;
+          color: var(--text-primary);
+          margin-bottom: 1.5rem;
+        }
+
+        .filters-container {
+          background: white;
+          padding: 1.5rem;
+          border-radius: 8px;
+          margin-bottom: 1rem;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 1.5rem;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .filter-group {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .filter-group label {
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+          color: var(--text-primary);
+          font-size: 0.9rem;
+        }
+
+        .search-input {
+          padding: 0.75rem;
+          border: 1px solid var(--border);
+          border-radius: 6px;
+          font-size: 0.95rem;
+        }
+
+        .filter-inputs {
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+        }
+
+        .filter-inputs input {
+          flex: 1;
+          padding: 0.5rem;
+          border: 1px solid var(--border);
+          border-radius: 4px;
+        }
+
+        select {
+          padding: 0.75rem;
+          border: 1px solid var(--border);
+          border-radius: 6px;
+          font-size: 0.95rem;
+          background: white;
+        }
+
+        .decision-filter {
+          background: white;
+          padding: 1.5rem;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .decision-filter span {
+          font-weight: 600;
+          margin-right: 1rem;
+          color: var(--text-primary);
+        }
+
+        .filter-buttons {
+          display: flex;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+          margin-top: 1rem;
+        }
+
+        .filter-btn {
+          padding: 0.5rem 1rem;
+          border: 2px solid transparent;
+          border-radius: 6px;
+          background: #f3f4f6;
+          color: var(--text-primary);
+          cursor: pointer;
+          font-weight: 600;
+          transition: all 0.2s;
+        }
+
+        .filter-btn.primary.active {
+          background: var(--primary);
+          color: white;
+          border-color: var(--primary);
+        }
+
+        .filter-btn.success.active {
+          background: var(--success);
+          color: white;
+          border-color: var(--success);
+        }
+
+        .filter-btn.pending.active {
+          background: #9CA3AF;
+          color: white;
+          border-color: #9CA3AF;
+        }
+
+        .filter-btn.danger.active {
+          background: var(--error);
+          color: white;
+          border-color: var(--error);
+        }
+
+        .filter-btn:hover:not(.active) {
+          border-color: var(--border);
+          background: white;
+        }
+
+        .tenders-section {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 2rem 2rem;
+        }
+
+        .tenders-summary {
+          color: var(--text-secondary);
+          margin-bottom: 1rem;
+          font-size: 0.95rem;
+        }
+
+        .tenders-list {
+          display: grid;
+          gap: 1rem;
+        }
+
+        .tender-card {
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+          overflow: hidden;
+          transition: all 0.2s;
+          border-left: 4px solid var(--border);
+          animation: slideIn 0.3s ease-out;
+        }
+
+        .tender-card.decided-yes {
+          border-left-color: var(--success);
+        }
+
+        .tender-card.decided-no {
+          border-left-color: var(--error);
+        }
+
+        .tender-card:hover {
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+          transform: translateY(-2px);
+        }
+
+        .tender-header {
+          padding: 1.5rem;
+          border-bottom: 1px solid var(--border);
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+        }
+
+        .tender-header h3 {
+          font-family: 'Oswald', sans-serif;
+          font-size: 1.1rem;
+          margin: 0 0 0.5rem 0;
+          color: var(--text-primary);
+          font-weight: 600;
+        }
+
+        .tender-id {
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+          font-family: 'JetBrains Mono', monospace;
+        }
+
+        .tender-decision {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .badge {
+          display: inline-block;
+          padding: 0.35rem 0.75rem;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: white;
+        }
+
+        .badge.success {
+          background: var(--success);
+        }
+
+        .badge.danger {
+          background: var(--error);
+        }
+
+        .tender-body {
+          padding: 1.5rem;
+        }
+
+        .tender-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 2rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .tender-info {
+          display: grid;
+          gap: 1rem;
+        }
+
+        .info-item {
+          display: grid;
+          gap: 0.25rem;
+        }
+
+        .info-item .label {
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .info-item .value {
+          font-size: 1rem;
+          color: var(--text-primary);
+          font-weight: 500;
+        }
+
+        .info-item .deadline {
+          color: var(--warning);
+        }
+
+        .info-item .days {
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+        }
+
+        .info-item .days.urgent {
+          color: var(--error);
+          font-weight: 600;
+        }
+
+        .info-item .category {
+          text-transform: capitalize;
+          color: var(--primary);
+          font-weight: 600;
+        }
+
+        .tender-cta {
+          margin-bottom: 1rem;
+        }
+
+        .btn-link {
+          display: inline-block;
+          padding: 0.75rem 1.5rem;
+          background: var(--primary);
+          color: white;
+          border-radius: 6px;
+          text-decoration: none;
+          font-weight: 600;
+          transition: all 0.2s;
+        }
+
+        .btn-link:hover {
+          background: #003370;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 74, 148, 0.25);
+        }
+
+        .tender-actions {
+          display: flex;
+          gap: 0.75rem;
+          padding: 1rem;
+          background: var(--light);
+          border-top: 1px solid var(--border);
+          border-radius: 0 0 8px 8px;
+        }
+
+        .action-btn {
+          flex: 1;
+          padding: 0.75rem;
+          border: 2px solid transparent;
+          border-radius: 6px;
+          background: #f3f4f6;
+          color: var(--text-primary);
+          cursor: pointer;
+          font-weight: 600;
+          transition: all 0.2s;
+        }
+
+        .action-btn.success {
+          color: var(--success);
+        }
+
+        .action-btn.success.active {
+          background: var(--success);
+          color: white;
+        }
+
+        .action-btn.danger {
+          color: var(--error);
+        }
+
+        .action-btn.danger.active {
+          background: var(--error);
+          color: white;
+        }
+
+        .action-btn:hover {
+          transform: translateY(-2px);
+        }
+
+        .loading {
+          text-align: center;
+          padding: 4rem 2rem;
+          color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+          width: 40px;
+          height: 40px;
+          border: 4px solid var(--border);
+          border-top-color: var(--primary);
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+          margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+          padding: 4rem 2rem;
+          text-align: center;
+        }
+
+        .empty-icon {
+          font-size: 3rem;
+          margin-bottom: 1rem;
+        }
+
+        .empty-content p {
+          color: var(--text-secondary);
+          font-size: 1rem;
+        }
+
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .tenders-header {
+            padding: 2rem 1rem;
+          }
+
+          .tenders-header h1 {
+            font-size: 1.5rem;
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .filters-container {
+            grid-template-columns: 1fr;
+          }
+
+          .tender-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .tender-actions {
+            flex-direction: column;
+          }
+
+          .filter-buttons {
+            flex-direction: column;
+          }
+
+          .filter-btn {
+            width: 100%;
+          }
+        }
+      `}</style>
     </main>
   );
 }
