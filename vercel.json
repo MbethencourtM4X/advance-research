@@ -1,0 +1,7 @@
+{
+  "name": "advance-idan-research",
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "env": {}
+}
