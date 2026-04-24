@@ -1,20 +1,25 @@
 'use client';
 
 import Link from 'next/link';
+import { useLanguage } from './context/LanguageContext';
+import { translations } from './translations';
 
 export default function Home() {
+  const { language } = useLanguage();
+  const t = translations[language];
+
   return (
     <main style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
       <header style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #0066cc 0%, #00a3e0 100%)',
         color: 'white',
         padding: '3rem 2rem',
         borderRadius: '8px',
         marginBottom: '2rem',
         textAlign: 'center'
       }}>
-        <h1>Advance — IDAN Panama Research</h1>
-        <p>Dashboard for government water tender tracking</p>
+        <h1>{t.home.title}</h1>
+        <p>{t.home.subtitle}</p>
       </header>
 
       <div style={{
@@ -29,21 +34,22 @@ export default function Home() {
             padding: '1.5rem',
             borderRadius: '8px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            border: '2px solid #667eea',
+            border: '2px solid #0066cc',
             cursor: 'pointer',
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            borderTop: '4px solid #0066cc'
           }}>
-            <h2 style={{ color: '#667eea', marginTop: 0 }}>📋 All Tenders</h2>
-            <p>View all 18 IDAN water tenders with decision tracker</p>
+            <h2 style={{ color: '#0066cc', marginTop: 0 }}>📋 {t.home.allTenders}</h2>
+            <p>{t.home.allTendersDesc}</p>
             <button style={{
-              background: '#667eea',
+              background: '#0066cc',
               color: 'white',
               border: 'none',
               padding: '0.5rem 1rem',
               borderRadius: '4px',
               cursor: 'pointer'
             }}>
-              Go to Tenders →
+              {t.home.goToTenders}
             </button>
           </div>
         </Link>
@@ -53,11 +59,12 @@ export default function Home() {
           padding: '1.5rem',
           borderRadius: '8px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          border: '2px solid #28a745'
+          border: '2px solid #28a745',
+          borderTop: '4px solid #28a745'
         }}>
-          <h2 style={{ color: '#28a745', marginTop: 0 }}>🟢 Live Data</h2>
-          <p>18 real IDAN tenders updated daily via RPA scraper</p>
-          <p style={{ fontSize: '0.9rem', color: '#666' }}>Last updated today</p>
+          <h2 style={{ color: '#28a745', marginTop: 0 }}>🟢 {t.home.liveData}</h2>
+          <p>{t.home.liveDataDesc}</p>
+          <p style={{ fontSize: '0.9rem', color: '#666' }}>{t.home.lastUpdated}</p>
         </div>
 
         <div style={{
@@ -65,33 +72,29 @@ export default function Home() {
           padding: '1.5rem',
           borderRadius: '8px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          border: '2px solid #1976d2'
+          border: '2px solid #00a3e0',
+          borderTop: '4px solid #00a3e0'
         }}>
-          <h2 style={{ color: '#1976d2', marginTop: 0 }}>✅ Decision Tracker</h2>
-          <p>Mark which tenders Advance wants to bid on</p>
-          <p style={{ fontSize: '0.9rem', color: '#666' }}>Decisions saved locally</p>
+          <h2 style={{ color: '#00a3e0', marginTop: 0 }}>✅ {t.home.decisionTracker}</h2>
+          <p>{t.home.decisionTrackerDesc}</p>
+          <p style={{ fontSize: '0.9rem', color: '#666' }}>{t.home.decisionsLocal}</p>
         </div>
       </div>
 
-      <section style={{ background: 'white', padding: '2rem', borderRadius: '8px', marginBottom: '2rem' }}>
-        <h2>About This Project</h2>
-        <p>
-          This dashboard aggregates all active water tenders from IDAN (Instituto de Acueductos y Alcantarillados Nacionales) in Panama.
-        </p>
-        <h3>Features</h3>
+      <section style={{ background: 'white', padding: '2rem', borderRadius: '8px', marginBottom: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+        <h2>{t.home.about}</h2>
+        <p>{t.home.aboutDesc}</p>
+        <h3>{t.home.features}</h3>
         <ul>
-          <li>✅ Real-time tender data (18 active opportunities)</li>
-          <li>✅ Decision tracker (Interested/Not Interested)</li>
-          <li>✅ Direct links to IDAN portal</li>
-          <li>✅ Tender values in Panamanian Balboas</li>
-          <li>✅ Deadline tracking</li>
-          <li>✅ Daily automated scraping</li>
+          <li>{t.home.feature1}</li>
+          <li>{t.home.feature2}</li>
+          <li>{t.home.feature3}</li>
+          <li>{t.home.feature4}</li>
+          <li>{t.home.feature5}</li>
+          <li>{t.home.feature6}</li>
         </ul>
-        <h3>For Advance Team</h3>
-        <p>
-          Use the tenders page to browse all opportunities and mark which ones Advance wants to pursue.
-          Your decisions are saved and you can change them anytime.
-        </p>
+        <h3>{t.home.forTeam}</h3>
+        <p>{t.home.forTeamDesc}</p>
       </section>
     </main>
   );
