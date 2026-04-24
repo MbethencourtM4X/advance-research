@@ -23,13 +23,19 @@ export default function TendersPage() {
     fetch('/idan-tenders-live.json')
       .then(res => res.json())
       .then(data => {
-        setTenders((data.tenders || []).map(tender => ({
-          ...tender,
-          url: `https://www.panamacompra.gob.pa/licitacion/${tender.id}`,
-          projectType: classifyProjectType(tender.title),
-          daysRemaining: calculateDaysRemaining(tender.deadline),
-          numericValue: parseValue(tender.estimated_value)
-        })));
+        setTenders((data.tenders || []).map(tender => {
+          // Generate correct Panama Compra URL using tender ID
+          const tenderId = tender.id.replace('IDAN-LICIT-', '');
+          const url = `https://www.panamacompra.gob.pa/licitacion/view/${tenderId}`;
+          
+          return {
+            ...tender,
+            url: url,
+            projectType: classifyProjectType(tender.title),
+            daysRemaining: calculateDaysRemaining(tender.deadline),
+            numericValue: parseValue(tender.estimated_value)
+          };
+        }));
         setLoading(false);
       })
       .catch(err => console.error('Error:', err));
@@ -312,485 +318,88 @@ export default function TendersPage() {
       )}
 
       <style jsx>{`
-        .tenders-page {
-          background: var(--light);
-        }
-
-        .tenders-header {
-          background: linear-gradient(135deg, var(--primary) 0%, #0066cc 100%);
-          color: white;
-          padding: 3rem 2rem;
-          text-align: center;
-        }
-
-        .tenders-header h1 {
-          font-family: 'Oswald', sans-serif;
-          font-size: 2rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .tenders-header p {
-          font-size: 1.1rem;
-          opacity: 0.95;
-        }
-
-        .stats-section {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 2rem;
-        }
-
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-          gap: 1rem;
-        }
-
-        .stat-card {
-          padding: 1.5rem;
-          border-radius: 8px;
-          color: white;
-          text-align: center;
-          animation: slideIn 0.3s ease-out;
-        }
-
-        .stat-card.primary {
-          background: linear-gradient(135deg, var(--primary), #0066cc);
-        }
-
-        .stat-card.success {
-          background: linear-gradient(135deg, var(--success), #12b86f);
-        }
-
-        .stat-card.warning {
-          background: linear-gradient(135deg, var(--warning), #f59e0b);
-        }
-
-        .stat-card.pending {
-          background: linear-gradient(135deg, #6B7280, #9CA3AF);
-        }
-
-        .stat-card.urgent {
-          background: linear-gradient(135deg, var(--error), #ef4444);
-        }
-
-        .stat-label {
-          font-size: 0.85rem;
-          opacity: 0.9;
-          margin-bottom: 0.5rem;
-        }
-
-        .stat-number {
-          font-family: 'Oswald', sans-serif;
-          font-size: 2rem;
-          font-weight: 700;
-        }
-
-        .filters-section {
-          max-width: 1200px;
-          margin: 0 auto 2rem;
-          padding: 0 2rem;
-        }
-
-        .filters-section h2 {
-          font-family: 'Oswald', sans-serif;
-          font-size: 1.5rem;
-          color: var(--text-primary);
-          margin-bottom: 1.5rem;
-        }
-
-        .filters-container {
-          background: white;
-          padding: 1.5rem;
-          border-radius: 8px;
-          margin-bottom: 1rem;
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 1.5rem;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .filter-group {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .filter-group label {
-          font-weight: 600;
-          margin-bottom: 0.5rem;
-          color: var(--text-primary);
-          font-size: 0.9rem;
-        }
-
-        .search-input {
-          padding: 0.75rem;
-          border: 1px solid var(--border);
-          border-radius: 6px;
-          font-size: 0.95rem;
-        }
-
-        .filter-inputs {
-          display: flex;
-          gap: 0.5rem;
-          align-items: center;
-        }
-
-        .filter-inputs input {
-          flex: 1;
-          padding: 0.5rem;
-          border: 1px solid var(--border);
-          border-radius: 4px;
-        }
-
-        select {
-          padding: 0.75rem;
-          border: 1px solid var(--border);
-          border-radius: 6px;
-          font-size: 0.95rem;
-          background: white;
-        }
-
-        .decision-filter {
-          background: white;
-          padding: 1.5rem;
-          border-radius: 8px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .decision-filter span {
-          font-weight: 600;
-          margin-right: 1rem;
-          color: var(--text-primary);
-        }
-
-        .filter-buttons {
-          display: flex;
-          gap: 0.75rem;
-          flex-wrap: wrap;
-          margin-top: 1rem;
-        }
-
-        .filter-btn {
-          padding: 0.5rem 1rem;
-          border: 2px solid transparent;
-          border-radius: 6px;
-          background: #f3f4f6;
-          color: var(--text-primary);
-          cursor: pointer;
-          font-weight: 600;
-          transition: all 0.2s;
-        }
-
-        .filter-btn.primary.active {
-          background: var(--primary);
-          color: white;
-          border-color: var(--primary);
-        }
-
-        .filter-btn.success.active {
-          background: var(--success);
-          color: white;
-          border-color: var(--success);
-        }
-
-        .filter-btn.pending.active {
-          background: #9CA3AF;
-          color: white;
-          border-color: #9CA3AF;
-        }
-
-        .filter-btn.danger.active {
-          background: var(--error);
-          color: white;
-          border-color: var(--error);
-        }
-
-        .filter-btn:hover:not(.active) {
-          border-color: var(--border);
-          background: white;
-        }
-
-        .tenders-section {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 0 2rem 2rem;
-        }
-
-        .tenders-summary {
-          color: var(--text-secondary);
-          margin-bottom: 1rem;
-          font-size: 0.95rem;
-        }
-
-        .tenders-list {
-          display: grid;
-          gap: 1rem;
-        }
-
-        .tender-card {
-          background: white;
-          border-radius: 8px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-          overflow: hidden;
-          transition: all 0.2s;
-          border-left: 4px solid var(--border);
-          animation: slideIn 0.3s ease-out;
-        }
-
-        .tender-card.decided-yes {
-          border-left-color: var(--success);
-        }
-
-        .tender-card.decided-no {
-          border-left-color: var(--error);
-        }
-
-        .tender-card:hover {
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-          transform: translateY(-2px);
-        }
-
-        .tender-header {
-          padding: 1.5rem;
-          border-bottom: 1px solid var(--border);
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-        }
-
-        .tender-header h3 {
-          font-family: 'Oswald', sans-serif;
-          font-size: 1.1rem;
-          margin: 0 0 0.5rem 0;
-          color: var(--text-primary);
-          font-weight: 600;
-        }
-
-        .tender-id {
-          font-size: 0.85rem;
-          color: var(--text-secondary);
-          font-family: 'JetBrains Mono', monospace;
-        }
-
-        .tender-decision {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .badge {
-          display: inline-block;
-          padding: 0.35rem 0.75rem;
-          border-radius: 20px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: white;
-        }
-
-        .badge.success {
-          background: var(--success);
-        }
-
-        .badge.danger {
-          background: var(--error);
-        }
-
-        .tender-body {
-          padding: 1.5rem;
-        }
-
-        .tender-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 2rem;
-          margin-bottom: 1.5rem;
-        }
-
-        .tender-info {
-          display: grid;
-          gap: 1rem;
-        }
-
-        .info-item {
-          display: grid;
-          gap: 0.25rem;
-        }
-
-        .info-item .label {
-          font-size: 0.8rem;
-          font-weight: 600;
-          color: var(--text-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .info-item .value {
-          font-size: 1rem;
-          color: var(--text-primary);
-          font-weight: 500;
-        }
-
-        .info-item .deadline {
-          color: var(--warning);
-        }
-
-        .info-item .days {
-          font-size: 0.85rem;
-          color: var(--text-secondary);
-        }
-
-        .info-item .days.urgent {
-          color: var(--error);
-          font-weight: 600;
-        }
-
-        .info-item .category {
-          text-transform: capitalize;
-          color: var(--primary);
-          font-weight: 600;
-        }
-
-        .tender-cta {
-          margin-bottom: 1rem;
-        }
-
-        .btn-link {
-          display: inline-block;
-          padding: 0.75rem 1.5rem;
-          background: var(--primary);
-          color: white;
-          border-radius: 6px;
-          text-decoration: none;
-          font-weight: 600;
-          transition: all 0.2s;
-        }
-
-        .btn-link:hover {
-          background: #003370;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 74, 148, 0.25);
-        }
-
-        .tender-actions {
-          display: flex;
-          gap: 0.75rem;
-          padding: 1rem;
-          background: var(--light);
-          border-top: 1px solid var(--border);
-          border-radius: 0 0 8px 8px;
-        }
-
-        .action-btn {
-          flex: 1;
-          padding: 0.75rem;
-          border: 2px solid transparent;
-          border-radius: 6px;
-          background: #f3f4f6;
-          color: var(--text-primary);
-          cursor: pointer;
-          font-weight: 600;
-          transition: all 0.2s;
-        }
-
-        .action-btn.success {
-          color: var(--success);
-        }
-
-        .action-btn.success.active {
-          background: var(--success);
-          color: white;
-        }
-
-        .action-btn.danger {
-          color: var(--error);
-        }
-
-        .action-btn.danger.active {
-          background: var(--error);
-          color: white;
-        }
-
-        .action-btn:hover {
-          transform: translateY(-2px);
-        }
-
-        .loading {
-          text-align: center;
-          padding: 4rem 2rem;
-          color: var(--text-secondary);
-        }
-
-        .loading-spinner {
-          width: 40px;
-          height: 40px;
-          border: 4px solid var(--border);
-          border-top-color: var(--primary);
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-          margin: 0 auto 1rem;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        .empty-state {
-          padding: 4rem 2rem;
-          text-align: center;
-        }
-
-        .empty-icon {
-          font-size: 3rem;
-          margin-bottom: 1rem;
-        }
-
-        .empty-content p {
-          color: var(--text-secondary);
-          font-size: 1rem;
-        }
-
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
+        .tenders-page { background: var(--light); }
+        .tenders-header { background: linear-gradient(135deg, var(--primary) 0%, #0066cc 100%); color: white; padding: 3rem 2rem; text-align: center; }
+        .tenders-header h1 { font-family: 'Oswald', sans-serif; font-size: 2rem; margin-bottom: 0.5rem; }
+        .tenders-header p { font-size: 1.1rem; opacity: 0.95; }
+        .stats-section { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
+        .stat-card { padding: 1.5rem; border-radius: 8px; color: white; text-align: center; animation: slideIn 0.3s ease-out; }
+        .stat-card.primary { background: linear-gradient(135deg, var(--primary), #0066cc); }
+        .stat-card.success { background: linear-gradient(135deg, var(--success), #12b86f); }
+        .stat-card.warning { background: linear-gradient(135deg, var(--warning), #f59e0b); }
+        .stat-card.pending { background: linear-gradient(135deg, #6B7280, #9CA3AF); }
+        .stat-card.urgent { background: linear-gradient(135deg, var(--error), #ef4444); }
+        .stat-label { font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; }
+        .stat-number { font-family: 'Oswald', sans-serif; font-size: 2rem; font-weight: 700; }
+        .filters-section { max-width: 1200px; margin: 0 auto 2rem; padding: 0 2rem; }
+        .filters-section h2 { font-family: 'Oswald', sans-serif; font-size: 1.5rem; color: var(--text-primary); margin-bottom: 1.5rem; }
+        .filters-container { background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+        .filter-group { display: flex; flex-direction: column; }
+        .filter-group label { font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary); font-size: 0.9rem; }
+        .search-input { padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; }
+        .filter-inputs { display: flex; gap: 0.5rem; align-items: center; }
+        .filter-inputs input { flex: 1; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; }
+        select { padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; background: white; }
+        .decision-filter { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+        .decision-filter span { font-weight: 600; margin-right: 1rem; color: var(--text-primary); }
+        .filter-buttons { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+        .filter-btn { padding: 0.5rem 1rem; border: 2px solid transparent; border-radius: 6px; background: #f3f4f6; color: var(--text-primary); cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .filter-btn.primary.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .filter-btn.success.active { background: var(--success); color: white; border-color: var(--success); }
+        .filter-btn.pending.active { background: #9CA3AF; color: white; border-color: #9CA3AF; }
+        .filter-btn.danger.active { background: var(--error); color: white; border-color: var(--error); }
+        .filter-btn:hover:not(.active) { border-color: var(--border); background: white; }
+        .tenders-section { max-width: 1200px; margin: 0 auto; padding: 0 2rem 2rem; }
+        .tenders-summary { color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.95rem; }
+        .tenders-list { display: grid; gap: 1rem; }
+        .tender-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); overflow: hidden; transition: all 0.2s; border-left: 4px solid var(--border); animation: slideIn 0.3s ease-out; }
+        .tender-card.decided-yes { border-left-color: var(--success); }
+        .tender-card.decided-no { border-left-color: var(--error); }
+        .tender-card:hover { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); transform: translateY(-2px); }
+        .tender-header { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
+        .tender-header h3 { font-family: 'Oswald', sans-serif; font-size: 1.1rem; margin: 0 0 0.5rem 0; color: var(--text-primary); font-weight: 600; }
+        .tender-id { font-size: 0.85rem; color: var(--text-secondary); font-family: monospace; }
+        .tender-decision { display: flex; gap: 0.5rem; }
+        .badge { display: inline-block; padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: white; }
+        .badge.success { background: var(--success); }
+        .badge.danger { background: var(--error); }
+        .tender-body { padding: 1.5rem; }
+        .tender-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 1.5rem; }
+        .tender-info { display: grid; gap: 1rem; }
+        .info-item { display: grid; gap: 0.25rem; }
+        .info-item .label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-item .value { font-size: 1rem; color: var(--text-primary); font-weight: 500; }
+        .info-item .deadline { color: var(--warning); }
+        .info-item .days { font-size: 0.85rem; color: var(--text-secondary); }
+        .info-item .days.urgent { color: var(--error); font-weight: 600; }
+        .info-item .category { text-transform: capitalize; color: var(--primary); font-weight: 600; }
+        .tender-cta { margin-bottom: 1rem; }
+        .btn-link { display: inline-block; padding: 0.75rem 1.5rem; background: var(--primary); color: white; border-radius: 6px; text-decoration: none; font-weight: 600; transition: all 0.2s; }
+        .btn-link:hover { background: #003370; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 74, 148, 0.25); }
+        .tender-actions { display: flex; gap: 0.75rem; padding: 1rem; background: var(--light); border-top: 1px solid var(--border); border-radius: 0 0 8px 8px; }
+        .action-btn { flex: 1; padding: 0.75rem; border: 2px solid transparent; border-radius: 6px; background: #f3f4f6; color: var(--text-primary); cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .action-btn.success { color: var(--success); }
+        .action-btn.success.active { background: var(--success); color: white; }
+        .action-btn.danger { color: var(--error); }
+        .action-btn.danger.active { background: var(--error); color: white; }
+        .action-btn:hover { transform: translateY(-2px); }
+        .loading { text-align: center; padding: 4rem 2rem; color: var(--text-secondary); }
+        .loading-spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .empty-state { padding: 4rem 2rem; text-align: center; }
+        .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .empty-content p { color: var(--text-secondary); font-size: 1rem; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 768px) {
-          .tenders-header {
-            padding: 2rem 1rem;
-          }
-
-          .tenders-header h1 {
-            font-size: 1.5rem;
-          }
-
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-
-          .filters-container {
-            grid-template-columns: 1fr;
-          }
-
-          .tender-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .tender-actions {
-            flex-direction: column;
-          }
-
-          .filter-buttons {
-            flex-direction: column;
-          }
-
-          .filter-btn {
-            width: 100%;
-          }
+          .tenders-header { padding: 2rem 1rem; }
+          .tenders-header h1 { font-size: 1.5rem; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr); }
+          .filters-container { grid-template-columns: 1fr; }
+          .tender-grid { grid-template-columns: 1fr; }
+          .tender-actions { flex-direction: column; }
+          .filter-buttons { flex-direction: column; }
+          .filter-btn { width: 100%; }
         }
       `}</style>
     </main>
