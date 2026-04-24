@@ -8,24 +8,24 @@ export default function Nav() {
 
   return (
     <nav style={{
-      background: '#333',
+      background: '#1a1a1a',
       color: 'white',
-      padding: '1rem 2rem',
+      padding: '0.75rem 2rem',
       display: 'flex',
       gap: '2rem',
-      alignItems: 'center'
+      alignItems: 'center',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
     }}>
-      <Link href="/" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>
-        Advance IDAN
+      <Link href="/" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold', fontSize: '1.1rem' }}>
+        🌊 Advance IDAN
       </Link>
-      <div style={{ display: 'flex', gap: '1rem' }}>
+      <div style={{ display: 'flex', gap: '1.5rem', marginLeft: 'auto' }}>
         <Link 
           href="/" 
           style={{ 
-            color: pathname === '/' ? '#28a745' : 'white', 
+            color: pathname === '/' ? '#00a3e0' : 'white', 
             textDecoration: 'none',
-            borderBottom: pathname === '/' ? '2px solid #28a745' : 'none',
-            paddingBottom: '0.5rem'
+            fontWeight: pathname === '/' ? 'bold' : 'normal'
           }}
         >
           Overview
@@ -33,10 +33,9 @@ export default function Nav() {
         <Link 
           href="/tenders" 
           style={{ 
-            color: pathname === '/tenders' ? '#28a745' : 'white', 
+            color: pathname === '/tenders' ? '#00a3e0' : 'white', 
             textDecoration: 'none',
-            borderBottom: pathname === '/tenders' ? '2px solid #28a745' : 'none',
-            paddingBottom: '0.5rem'
+            fontWeight: pathname === '/tenders' ? 'bold' : 'normal'
           }}
         >
           All Tenders
