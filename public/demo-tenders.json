@@ -1,0 +1,9 @@
+{
+  "totalValue": 13750000,
+  "count": 5,
+  "tenders": [
+    {"title": "Tuberías PVC expansión red", "value": "$2.1M", "deadline": "2026-05-15"},
+    {"title": "Sistema tratamiento agua avanzado", "value": "$5.2M", "deadline": "2026-06-01"},
+    {"title": "Equipos bombeo alta eficiencia", "value": "$3.4M", "deadline": "2026-05-20"}
+  ]
+}
