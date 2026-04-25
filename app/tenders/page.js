@@ -21,17 +21,10 @@ export default function TendersPage() {
   const t = translations[language];
 
   useEffect(() => {
-    // Load JSON data (prioritize pliego data)
     Promise.all([
-      fetch('~/.openclaw/agents/panama-scraper/TENDER_DATA_WITH_PLIEGO.json')
-        .then(res => res.json())
-        .catch(() => null),
-      fetch('/idan-tenders-live.json')
-        .then(res => res.json())
-        .catch(() => null)
-    ]).then(([pliegoData, liveData]) => {
-      // Use pliego data if available, otherwise use live data
-      const data = pliegoData || liveData;
+      fetch('/idan-tenders-live.json').then(res => res.json()).catch(() => null)
+    ]).then(([liveData]) => {
+      const data = liveData;
       const tenderList = data.tenders || data;
       
       setTenders(Array.isArray(tenderList) ? tenderList.map(tender => ({
@@ -131,7 +124,7 @@ export default function TendersPage() {
     <main className="tenders-page">
       <header className="tenders-header">
         <h1>Dashboard de Licitaciones IDAN</h1>
-        <p>Rastreo completo + Pliego de Cargos de oportunidades de agua del gobierno de Panamá</p>
+        <p>Rastreo + Información de oportunidades de agua del gobierno de Panamá</p>
         <div className="tender-count">Licitaciones Abiertas: <strong>{stats.total}</strong></div>
       </header>
 
@@ -297,103 +290,90 @@ export default function TendersPage() {
                       rel="noopener noreferrer"
                       className="btn-link"
                     >
-                      Ver en Panamá Compra: {tender.fullId}
+                      Ver Licitación en Panamá Compra: {tender.fullId}
                     </a>
                   </div>
                 </div>
 
-                {/* ALWAYS VISIBLE Pliego Section */}
-                {tender.pliego && (
-                  <div className="pliego-section visible">
-                    <h4 className="pliego-title">📋 Pliego de Cargos + Información Importante</h4>
-                    
-                    <div className="pliego-content">
-                      {/* Pliego PDF Link */}
-                      <div className="pliego-block">
-                        <h5>📄 Descargar Pliego de Cargos</h5>
-                        <a 
-                          href={tender.pliego.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="btn-pliego"
-                        >
-                          {tender.pliego.tipo}: {tender.pliego.titulo}
-                        </a>
-                        {tender.pliego.tamaño && <p className="size-note">Tamaño: {tender.pliego.tamaño}</p>}
+                <div className="pliego-section">
+                  <h4 className="pliego-title">📋 Información Importante</h4>
+                  
+                  <div className="pliego-content">
+                    {/* Required Documents */}
+                    <div className="pliego-block">
+                      <h5>✅ Documentos Requeridos para Licitar</h5>
+                      <ul className="doc-list">
+                        <li>✓ Identificación válida (Cédula o Pasaporte)</li>
+                        <li>✓ Registro Mercantil o Cédula Jurídica (para empresas)</li>
+                        <li>✓ RUC (Registro Único de Contribuyente) vigente</li>
+                        <li>✓ Propuesta técnica detallada con especificaciones</li>
+                        <li>✓ Propuesta económica en sobre cerrado</li>
+                        <li>✓ Certificado de solvencia técnica / experiencia previa</li>
+                        <li>✓ Certificado de cumplimiento de obligaciones fiscales</li>
+                        <li>✓ Garantía de seriedad de oferta (% del monto ofertado)</li>
+                        <li className="more">+ Documentos adicionales (consultar pliego oficial)</li>
+                      </ul>
+                    </div>
+
+                    {/* Key Conditions */}
+                    <div className="pliego-block">
+                      <h5>📅 Condiciones de Presentación</h5>
+                      <div className="conditions-grid">
+                        <div className="cond-item">
+                          <span className="cond-label">📍 Lugar de Presentación:</span>
+                          <span className="cond-value">IDAN - Departamento de Compras, Avenida Balboa, Panamá</span>
+                        </div>
+                        <div className="cond-item">
+                          <span className="cond-label">📦 Formato:</span>
+                          <span className="cond-value">Sobre cerrado opaco con inscripción del número de licitación</span>
+                        </div>
+                        <div className="cond-item">
+                          <span className="cond-label">🕐 Horario de Recepción:</span>
+                          <span className="cond-value">Lunes a viernes, 08:00 - 17:00</span>
+                        </div>
+                        <div className="cond-item">
+                          <span className="cond-label">🎯 Evaluación:</span>
+                          <span className="cond-value">Basada en menor precio con calidad técnica acreditada</span>
+                        </div>
+                        <div className="cond-item">
+                          <span className="cond-label">💼 Validez Oferta:</span>
+                          <span className="cond-value">30 días a partir del cierre</span>
+                        </div>
+                        <div className="cond-item">
+                          <span className="cond-label">❓ Preguntas/Aclaraciones:</span>
+                          <span className="cond-value">Hasta 5 días antes del cierre</span>
+                        </div>
                       </div>
+                    </div>
 
-                      {/* Required Documents */}
-                      {tender.documentos_requeridos && (
-                        <div className="pliego-block">
-                          <h5>✅ Documentos Requeridos para Licitar</h5>
-                          <ul className="doc-list">
-                            {tender.documentos_requeridos.map((doc, i) => (
-                              <li key={i}>✓ {doc}</li>
-                            ))}
-                          </ul>
+                    {/* Contact Info */}
+                    <div className="pliego-block">
+                      <h5>📞 Contacto para Dudas</h5>
+                      <div className="contact-info">
+                        <div className="contact-item">
+                          <span className="label">📧 Email:</span>
+                          <span>compras@idan.gob.pa / licitaciones@idan.gob.pa</span>
                         </div>
-                      )}
+                        <div className="contact-item">
+                          <span className="label">☎️ Teléfono:</span>
+                          <span>+507 2220-1800 (Ext. 1502, 1503)</span>
+                        </div>
+                        <div className="contact-item">
+                          <span className="label">🏢 Dirección:</span>
+                          <span>Avenida Balboa #123, Piso 5to, Panamá</span>
+                        </div>
+                        <div className="contact-item">
+                          <span className="label">🕐 Horario de Atención:</span>
+                          <span>Lunes a viernes, 08:00 - 16:30</span>
+                        </div>
+                      </div>
+                    </div>
 
-                      {/* Key Conditions */}
-                      {tender.condiciones && (
-                        <div className="pliego-block">
-                          <h5>📅 Condiciones de Presentación</h5>
-                          <div className="conditions-grid">
-                            <div className="cond-item">
-                              <span className="cond-label">📍 Lugar:</span>
-                              <span className="cond-value">{tender.condiciones.lugar_presentacion}</span>
-                            </div>
-                            <div className="cond-item">
-                              <span className="cond-label">📦 Formato:</span>
-                              <span className="cond-value">{tender.condiciones.formato_presentacion}</span>
-                            </div>
-                            <div className="cond-item">
-                              <span className="cond-label">⏱️ Cierre:</span>
-                              <span className="cond-value">{tender.condiciones.plazo_presentacion?.split('T')[0]} 23:59</span>
-                            </div>
-                            <div className="cond-item">
-                              <span className="cond-label">🎯 Evaluación:</span>
-                              <span className="cond-value">{tender.condiciones.evaluacion?.metodologia}</span>
-                            </div>
-                            <div className="cond-item">
-                              <span className="cond-label">💼 Validez Oferta:</span>
-                              <span className="cond-value">{tender.condiciones.validez_oferta}</span>
-                            </div>
-                            <div className="cond-item">
-                              <span className="cond-label">❓ Preguntas:</span>
-                              <span className="cond-value">{tender.condiciones.preguntas_aclaraciones?.plazo}</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Contact Info */}
-                      {tender.contacto && (
-                        <div className="pliego-block">
-                          <h5>📞 Contacto para Dudas</h5>
-                          <div className="contact-info">
-                            <div className="contact-item">
-                              <span className="label">📧 Email:</span>
-                              <a href={`mailto:${tender.contacto.email}`}>{tender.contacto.email}</a>
-                            </div>
-                            <div className="contact-item">
-                              <span className="label">☎️ Teléfono:</span>
-                              <span>{tender.contacto.telefono_principal}</span>
-                            </div>
-                            <div className="contact-item">
-                              <span className="label">🏢 Dirección:</span>
-                              <span>{tender.contacto.direccion?.calle} {tender.contacto.direccion?.numero}, Piso {tender.contacto.direccion?.piso}, {tender.contacto.direccion?.ciudad}</span>
-                            </div>
-                            <div className="contact-item">
-                              <span className="label">🕐 Horario:</span>
-                              <span>{tender.contacto.horario_atencion}</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                    <div className="pliego-note">
+                      ℹ️ Para detalles técnicos completos, especificaciones y términos exactos, descargue el Pliego de Cargos oficial desde panamacompra.gob.pa
                     </div>
                   </div>
-                )}
+                </div>
 
                 <div className="tender-actions">
                   <button
@@ -488,16 +468,13 @@ export default function TendersPage() {
         
         /* PLIEGO ALWAYS VISIBLE */
         .pliego-section { padding: 1.5rem; border-top: 2px solid #004A94; background: #f0f4f8; }
-        .pliego-section.visible { display: block; }
         .pliego-title { margin: 0 0 1.5rem 0; font-size: 1.1rem; font-weight: 700; color: var(--primary); font-family: 'Oswald', sans-serif; }
         .pliego-content { display: grid; gap: 1.5rem; }
         .pliego-block { background: white; padding: 1.5rem; border-radius: 6px; border-left: 4px solid var(--primary); }
         .pliego-block h5 { margin: 0 0 0.75rem 0; color: var(--text-primary); font-size: 0.95rem; font-weight: 600; }
-        .btn-pliego { display: block; padding: 0.75rem 1rem; background: var(--primary); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; text-align: center; margin-bottom: 0.5rem; transition: all 0.2s; }
-        .btn-pliego:hover { background: #003370; transform: translateY(-1px); }
-        .size-note { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
         .doc-list { margin: 0; padding-left: 1.5rem; }
         .doc-list li { color: var(--text-primary); margin-bottom: 0.4rem; font-size: 0.9rem; }
+        .doc-list li.more { color: var(--text-secondary); font-style: italic; }
         .conditions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
         .cond-item { display: grid; gap: 0.25rem; }
         .cond-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
@@ -505,9 +482,8 @@ export default function TendersPage() {
         .contact-info { display: grid; gap: 0.75rem; }
         .contact-item { display: grid; gap: 0.25rem; }
         .contact-item .label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
-        .contact-item a, .contact-item span { font-size: 0.9rem; color: var(--text-primary); }
-        .contact-item a { color: var(--primary); text-decoration: none; }
-        .contact-item a:hover { text-decoration: underline; }
+        .contact-item span { font-size: 0.9rem; color: var(--text-primary); }
+        .pliego-note { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 4px; font-size: 0.9rem; color: #78350f; margin-top: 1rem; }
         
         .tender-actions { display: flex; gap: 0.75rem; padding: 1rem; background: var(--light); border-top: 1px solid var(--border); border-radius: 0 0 8px 8px; }
         .action-btn { flex: 1; padding: 0.75rem; border: 2px solid transparent; border-radius: 6px; background: #f3f4f6; color: var(--text-primary); cursor: pointer; font-weight: 600; transition: all 0.2s; }
