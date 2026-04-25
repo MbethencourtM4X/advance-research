@@ -1,159 +1,173 @@
 {
   "source": "multiple",
-  "timestamp": "2026-04-25T00:11:00Z",
+  "timestamp": "2026-04-25T13:31:00Z",
   "countries": {
     "panama": {
       "flag": "🇵🇦",
       "name": "Panama",
       "source": "panamacompra.gob.pa",
       "tenders": [
-        {
-          "id": "2026-1-06-01-99-LP-000012",
-          "numero": "2026-1-06-01-99-LP-000012",
-          "titulo": "Suministro e instalación de sistema de desinfección UV para planta de tratamiento",
-          "valor": "89500.00",
-          "moneda": "B/.",
-          "deadline": "2026-05-15",
-          "dias_restantes": 20,
-          "entidad": "IDAN",
-          "estado": "ABIERTA",
-          "categoria": "agua",
-          "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-01-99-LP-000012",
-          "pais": "panama"
-        },
-        {
-          "id": "2026-1-06-02-99-LP-000013",
-          "numero": "2026-1-06-02-99-LP-000013",
-          "titulo": "Rehabilitación de red de distribución de agua potable - Sector San Miguelito",
-          "valor": "245750.50",
-          "moneda": "B/.",
-          "deadline": "2026-05-22",
-          "dias_restantes": 27,
-          "entidad": "IDAN",
-          "estado": "ABIERTA",
-          "categoria": "agua",
-          "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-02-99-LP-000013",
-          "pais": "panama"
-        },
-        {
-          "id": "2026-1-06-03-99-LP-000014",
-          "numero": "2026-1-06-03-99-LP-000014",
-          "titulo": "Adquisición de medidores inteligentes y válvulas de control para red de agua",
-          "valor": "156200.00",
-          "moneda": "B/.",
-          "deadline": "2026-05-20",
-          "dias_restantes": 25,
-          "entidad": "IDAN",
-          "estado": "ABIERTA",
-          "categoria": "agua",
-          "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-03-99-LP-000014",
-          "pais": "panama"
-        },
-        {
-          "id": "2026-1-06-04-99-LP-000015",
-          "numero": "2026-1-06-04-99-LP-000015",
-          "titulo": "Servicios de limpieza, desinfección y mantenimiento de tanques de almacenamiento",
-          "valor": "92500.00",
-          "moneda": "B/.",
-          "deadline": "2026-05-18",
-          "dias_restantes": 23,
-          "entidad": "IDAN",
-          "estado": "ABIERTA",
-          "categoria": "agua",
-          "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-04-99-LP-000015",
-          "pais": "panama"
-        },
-        {
-          "id": "2026-1-06-05-99-LP-000016",
-          "numero": "2026-1-06-05-99-LP-000016",
-          "titulo": "Suministro trimestral de químicos para tratamiento de agua potable y desinfección",
-          "valor": "285600.75",
-          "moneda": "B/.",
-          "deadline": "2026-05-25",
-          "dias_restantes": 30,
-          "entidad": "IDAN",
-          "estado": "ABIERTA",
-          "categoria": "agua",
-          "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-05-99-LP-000016",
-          "pais": "panama"
-        },
-        {
-          "id": "2026-1-06-06-99-LP-000017",
-          "numero": "2026-1-06-06-99-LP-000017",
-          "titulo": "Servicios de auditoría y certificación de calidad de agua - Laboratorio independiente",
-          "valor": "28500.00",
-          "moneda": "B/.",
-          "deadline": "2026-05-10",
-          "dias_restantes": 15,
-          "entidad": "IDAN",
-          "estado": "ABIERTA",
-          "categoria": "agua",
-          "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-06-99-LP-000017",
-          "pais": "panama"
-        },
-        {
-          "id": "2026-1-06-07-99-LP-000018",
-          "numero": "2026-1-06-07-99-LP-000018",
-          "titulo": "Adquisición de repuestos y piezas para bombas centrífugas de alta capacidad",
-          "valor": "125850.00",
-          "moneda": "B/.",
-          "deadline": "2026-05-16",
-          "dias_restantes": 21,
-          "entidad": "IDAN",
-          "estado": "ABIERTA",
-          "categoria": "agua",
-          "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-07-99-LP-000018",
-          "pais": "panama"
-        },
-        {
-          "id": "2026-1-06-08-99-LP-000019",
-          "numero": "2026-1-06-08-99-LP-000019",
-          "titulo": "Construcción y rehabilitación de línea de conducción de agua - Sector Este",
-          "valor": "562100.00",
-          "moneda": "B/.",
-          "deadline": "2026-06-01",
-          "dias_restantes": 37,
-          "entidad": "IDAN",
-          "estado": "ABIERTA",
-          "categoria": "agua",
-          "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-08-99-LP-000019",
-          "pais": "panama"
-        },
-        {
-          "id": "2026-1-06-09-99-LP-000020",
-          "numero": "2026-1-06-09-99-LP-000020",
-          "titulo": "Implementación e instalación de sistema SCADA para monitoreo en tiempo real",
-          "valor": "175600.00",
-          "moneda": "B/.",
-          "deadline": "2026-05-23",
-          "dias_restantes": 28,
-          "entidad": "IDAN",
-          "estado": "ABIERTA",
-          "categoria": "agua",
-          "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-09-99-LP-000020",
-          "pais": "panama"
-        }
+{
+  "id": "2026-1-06-01-99-LP-000012",
+  "numero": "2026-1-06-01-99-LP-000012",
+  "titulo": "Suministro e instalación de sistema de desinfección UV para planta de tratamiento",
+  "valor": "89500.00",
+  "moneda": "B/.",
+  "deadline": "2026-05-15",
+  "dias_restantes": 20,
+  "entidad": "IDAN",
+  "estado": "ABIERTA",
+  "categoria": "agua",
+  "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-01-99-LP-000012",
+  "pais": "panama"
+}
+{
+  "id": "2026-1-06-02-99-LP-000013",
+  "numero": "2026-1-06-02-99-LP-000013",
+  "titulo": "Rehabilitación de red de distribución de agua potable - Sector San Miguelito",
+  "valor": "245750.50",
+  "moneda": "B/.",
+  "deadline": "2026-05-22",
+  "dias_restantes": 27,
+  "entidad": "IDAN",
+  "estado": "ABIERTA",
+  "categoria": "agua",
+  "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-02-99-LP-000013",
+  "pais": "panama"
+}
+{
+  "id": "2026-1-06-03-99-LP-000014",
+  "numero": "2026-1-06-03-99-LP-000014",
+  "titulo": "Adquisición de medidores inteligentes y válvulas de control para red de agua",
+  "valor": "156200.00",
+  "moneda": "B/.",
+  "deadline": "2026-05-20",
+  "dias_restantes": 25,
+  "entidad": "IDAN",
+  "estado": "ABIERTA",
+  "categoria": "agua",
+  "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-03-99-LP-000014",
+  "pais": "panama"
+}
+{
+  "id": "2026-1-06-04-99-LP-000015",
+  "numero": "2026-1-06-04-99-LP-000015",
+  "titulo": "Servicios de limpieza, desinfección y mantenimiento de tanques de almacenamiento",
+  "valor": "92500.00",
+  "moneda": "B/.",
+  "deadline": "2026-05-18",
+  "dias_restantes": 23,
+  "entidad": "IDAN",
+  "estado": "ABIERTA",
+  "categoria": "agua",
+  "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-04-99-LP-000015",
+  "pais": "panama"
+}
+{
+  "id": "2026-1-06-05-99-LP-000016",
+  "numero": "2026-1-06-05-99-LP-000016",
+  "titulo": "Suministro trimestral de químicos para tratamiento de agua potable y desinfección",
+  "valor": "285600.75",
+  "moneda": "B/.",
+  "deadline": "2026-05-25",
+  "dias_restantes": 30,
+  "entidad": "IDAN",
+  "estado": "ABIERTA",
+  "categoria": "agua",
+  "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-05-99-LP-000016",
+  "pais": "panama"
+}
+{
+  "id": "2026-1-06-06-99-LP-000017",
+  "numero": "2026-1-06-06-99-LP-000017",
+  "titulo": "Servicios de auditoría y certificación de calidad de agua - Laboratorio independiente",
+  "valor": "28500.00",
+  "moneda": "B/.",
+  "deadline": "2026-05-10",
+  "dias_restantes": 15,
+  "entidad": "IDAN",
+  "estado": "ABIERTA",
+  "categoria": "agua",
+  "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-06-99-LP-000017",
+  "pais": "panama"
+}
+{
+  "id": "2026-1-06-07-99-LP-000018",
+  "numero": "2026-1-06-07-99-LP-000018",
+  "titulo": "Adquisición de repuestos y piezas para bombas centrífugas de alta capacidad",
+  "valor": "125850.00",
+  "moneda": "B/.",
+  "deadline": "2026-05-16",
+  "dias_restantes": 21,
+  "entidad": "IDAN",
+  "estado": "ABIERTA",
+  "categoria": "agua",
+  "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-07-99-LP-000018",
+  "pais": "panama"
+}
+{
+  "id": "2026-1-06-08-99-LP-000019",
+  "numero": "2026-1-06-08-99-LP-000019",
+  "titulo": "Construcción y rehabilitación de línea de conducción de agua - Sector Este",
+  "valor": "562100.00",
+  "moneda": "B/.",
+  "deadline": "2026-06-01",
+  "dias_restantes": 37,
+  "entidad": "IDAN",
+  "estado": "ABIERTA",
+  "categoria": "agua",
+  "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-08-99-LP-000019",
+  "pais": "panama"
+}
+{
+  "id": "2026-1-06-09-99-LP-000020",
+  "numero": "2026-1-06-09-99-LP-000020",
+  "titulo": "Implementación e instalación de sistema SCADA para monitoreo en tiempo real",
+  "valor": "175600.00",
+  "moneda": "B/.",
+  "deadline": "2026-05-23",
+  "dias_restantes": 28,
+  "entidad": "IDAN",
+  "estado": "ABIERTA",
+  "categoria": "agua",
+  "url": "https://www.panamacompra.gob.pa/licitacion/2026-1-06-09-99-LP-000020",
+  "pais": "panama"
+}
       ]
     },
     "costa_rica": {
       "flag": "🇨🇷",
       "name": "Costa Rica",
       "source": "sicop.go.cr",
-      "status": "searching",
-      "tenders": []
+      "tenders": [
+{
+  "id": "2026LE-000003-0025700001",
+  "numero": "2026LE-000003-0025700001",
+  "titulo": "[LE] LICITACIÓN MENOR CON ENTREGA SEGÚN DEMANDA PARA MANEJO DE AGUAS Y ESTRUCTURAS CONEXAS, DE LA INFRAESTRUCTURA DE LA RED VIAL DEL CANTÓN DE SIQUIRRES   Encargado de publicación, gestión de objeciones y apertura :  LUCILA MAYORGA BALMACEDA",
+  "valor": "N/A",
+  "moneda": "CRC",
+  "deadline": "06/05/2026 17:15",
+  "dias_restantes": 0,
+  "entidad": "MUNICIPALIDAD DE SIQUIRRES",
+  "estado": "ABIERTA",
+  "categoria": "agua",
+  "url": "javascript:void(0)",
+  "pais": "costa_rica"
+}
+      ]
     },
     "nicaragua": {
       "flag": "🇳🇮",
       "name": "Nicaragua",
       "source": "nicaraguacompra.gob.ni",
-      "status": "searching",
+      "status": "extracting",
       "tenders": []
     },
     "el_salvador": {
       "flag": "🇸🇻",
       "name": "El Salvador",
       "source": "compra.sal.gob.sv",
-      "status": "searching",
+      "status": "pending_credentials",
       "tenders": []
     }
   }
