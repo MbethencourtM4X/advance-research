@@ -103,7 +103,7 @@ export default function TendersPage() {
       if (advancedFilters.searchQuery && !String(titleField).toLowerCase().includes(advancedFilters.searchQuery.toLowerCase())) return false;
 
       if (advancedFilters.estado === 'open') {
-        if (t.estado !== 'ABIERTA' && t.estado !== 'VIGENTE') return false;
+        if (t.estado !== "ABIERTA") return false;
       }
 
       return true;
@@ -111,7 +111,7 @@ export default function TendersPage() {
   };
 
   const stats = {
-    total: tenders.filter(t => t.estado === 'ABIERTA' || t.estado === 'VIGENTE').length,
+    total: tenders.filter(t => t.estado === "ABIERTA").length,
     interested: Object.values(decisions).filter(d => d?.choice === 'yes').length,
     notInterested: Object.values(decisions).filter(d => d?.choice === 'no').length,
     pending: tenders.filter(t => t.estado === 'ABIERTA' || t.estado === 'VIGENTE').length - Object.keys(decisions).length
