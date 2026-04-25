@@ -24,12 +24,14 @@ export default function TendersPage() {
       .then(res => res.json())
       .then(data => {
         setTenders((data.tenders || []).map(tender => {
-          // Generate correct Panama Compra URL using tender ID
-          const tenderId = tender.id.replace('IDAN-LICIT-', '');
-          const url = `https://www.panamacompra.gob.pa/licitacion/view/${tenderId}`;
+          // Use FULL tender ID for URL
+          const fullId = tender.id; // e.g., "IDAN-LICIT-2026-0001"
+          // Panama Compra URL structure with full ID
+          const url = `https://www.panamacompra.gob.pa/licitacion/${fullId}`;
           
           return {
             ...tender,
+            fullId: fullId,
             url: url,
             projectType: classifyProjectType(tender.title),
             daysRemaining: calculateDaysRemaining(tender.deadline),
@@ -119,6 +121,7 @@ export default function TendersPage() {
       <header className="tenders-header">
         <h1>Dashboard de Licitaciones IDAN</h1>
         <p>Rastreo de oportunidades de agua del gobierno de Panamá</p>
+        <div className="tender-count">Total de Licitaciones: <strong>{stats.total}</strong></div>
       </header>
 
       <section className="stats-section">
@@ -249,7 +252,7 @@ export default function TendersPage() {
                 <div className="tender-header">
                   <div>
                     <h3>{tender.title}</h3>
-                    <div className="tender-id">{tender.id}</div>
+                    <div className="tender-id">Licitación: <strong>{tender.fullId}</strong></div>
                   </div>
                   <div className="tender-decision">
                     {decisions[tender.id]?.choice === 'yes' && <span className="badge success">Interesante</span>}
@@ -267,7 +270,7 @@ export default function TendersPage() {
                       <div className="info-item">
                         <span className="label">Deadline</span>
                         <span className="value deadline">{tender.deadline}</span>
-                        <span className="days {tender.daysRemaining < 7 ? 'urgent' : ''}">{tender.daysRemaining} días</span>
+                        <span className="days">{tender.daysRemaining} días</span>
                       </div>
                       <div className="info-item">
                         <span className="label">Tipo</span>
@@ -283,7 +286,7 @@ export default function TendersPage() {
                       rel="noopener noreferrer"
                       className="btn-link"
                     >
-                      Ver en Panamá Compra
+                      Ver en Panamá Compra: {tender.fullId}
                     </a>
                   </div>
                 </div>
@@ -321,7 +324,8 @@ export default function TendersPage() {
         .tenders-page { background: var(--light); }
         .tenders-header { background: linear-gradient(135deg, var(--primary) 0%, #0066cc 100%); color: white; padding: 3rem 2rem; text-align: center; }
         .tenders-header h1 { font-family: 'Oswald', sans-serif; font-size: 2rem; margin-bottom: 0.5rem; }
-        .tenders-header p { font-size: 1.1rem; opacity: 0.95; }
+        .tenders-header p { font-size: 1.1rem; opacity: 0.95; margin-bottom: 1rem; }
+        .tender-count { font-size: 1.2rem; font-weight: 600; }
         .stats-section { max-width: 1200px; margin: 0 auto; padding: 2rem; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
         .stat-card { padding: 1.5rem; border-radius: 8px; color: white; text-align: center; animation: slideIn 0.3s ease-out; }
@@ -359,7 +363,8 @@ export default function TendersPage() {
         .tender-card:hover { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); transform: translateY(-2px); }
         .tender-header { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
         .tender-header h3 { font-family: 'Oswald', sans-serif; font-size: 1.1rem; margin: 0 0 0.5rem 0; color: var(--text-primary); font-weight: 600; }
-        .tender-id { font-size: 0.85rem; color: var(--text-secondary); font-family: monospace; }
+        .tender-id { font-size: 0.9rem; color: var(--text-secondary); }
+        .tender-id strong { color: var(--primary); font-weight: 700; }
         .tender-decision { display: flex; gap: 0.5rem; }
         .badge { display: inline-block; padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: white; }
         .badge.success { background: var(--success); }
@@ -372,10 +377,9 @@ export default function TendersPage() {
         .info-item .value { font-size: 1rem; color: var(--text-primary); font-weight: 500; }
         .info-item .deadline { color: var(--warning); }
         .info-item .days { font-size: 0.85rem; color: var(--text-secondary); }
-        .info-item .days.urgent { color: var(--error); font-weight: 600; }
         .info-item .category { text-transform: capitalize; color: var(--primary); font-weight: 600; }
         .tender-cta { margin-bottom: 1rem; }
-        .btn-link { display: inline-block; padding: 0.75rem 1.5rem; background: var(--primary); color: white; border-radius: 6px; text-decoration: none; font-weight: 600; transition: all 0.2s; }
+        .btn-link { display: inline-block; padding: 0.75rem 1.5rem; background: var(--primary); color: white; border-radius: 6px; text-decoration: none; font-weight: 600; transition: all 0.2s; font-size: 0.9rem; }
         .btn-link:hover { background: #003370; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 74, 148, 0.25); }
         .tender-actions { display: flex; gap: 0.75rem; padding: 1rem; background: var(--light); border-top: 1px solid var(--border); border-radius: 0 0 8px 8px; }
         .action-btn { flex: 1; padding: 0.75rem; border: 2px solid transparent; border-radius: 6px; background: #f3f4f6; color: var(--text-primary); cursor: pointer; font-weight: 600; transition: all 0.2s; }
