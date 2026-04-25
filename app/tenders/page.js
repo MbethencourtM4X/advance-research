@@ -1,289 +1,231 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import { useLanguage } from '../context/LanguageContext';
+import { useTenders } from './hooks/useTenders';
+import { useSaved } from './hooks/useSaved';
+import TenderCard from './components/TenderCard';
+import FilterPanel from './components/FilterPanel';
+import TenderModal from './components/TenderModal';
+import EmptyState from './components/EmptyState';
+import LoadingSkeleton from './components/LoadingSkeleton';
+import { useToast, ToastContainer } from './components/Toast';
 
-const TendersPage = () => {
-  const [tenders, setTenders] = useState([]);
-  const [saved, setSaved] = useState([]);
-  const [language, setLanguage] = useState('es');
+const STRINGS = {
+  es: {
+    title: 'Licitaciones de Agua',
+    search: 'Buscar licitaciones…',
+    filters: 'Filtros',
+    country: 'País',
+    allCountries: 'Todos los países',
+    value: 'Valor',
+    maxValue: 'Valor máx',
+    deadline: 'Plazo',
+    all: 'Todas',
+    saved: 'Guardados',
+    save: 'Guardar',
+    remove: 'Remover',
+    download: 'Descargar CSV',
+    noResults: 'Sin resultados',
+    noResultsHint: 'Intenta ampliar los filtros o cambiar la búsqueda',
+    noSaved: 'No hay guardados',
+    noSavedHint: 'Guarda licitaciones con ☆ para verlas aquí',
+    view: 'Ver Licitación',
+    days: 'días',
+    urgent: 'URGENTE',
+    expired: 'VENCIDO',
+    entity: 'Entidad',
+    category: 'Categoría',
+    status: 'Estado',
+    noValue: 'No disponible',
+    noLink: 'Sin enlace',
+    sortBy: 'Ordenar',
+    sortDeadline: '📅 Más urgente',
+    sortValueDesc: '💰 Mayor valor',
+    sortValueAsc: '💰 Menor valor',
+    sortUrgency: '⚠ Urgencia',
+    licitaciones: 'licitaciones',
+    licitacion: 'licitación',
+    toastSaved: '⭐ Licitación guardada',
+    toastRemoved: '✓ Eliminada de guardados',
+    lastUpdated: 'Actualizado',
+  },
+  en: {
+    title: 'Water Tenders',
+    search: 'Search tenders…',
+    filters: 'Filters',
+    country: 'Country',
+    allCountries: 'All countries',
+    value: 'Value',
+    maxValue: 'Max value',
+    deadline: 'Deadline',
+    all: 'All',
+    saved: 'Saved',
+    save: 'Save',
+    remove: 'Remove',
+    download: 'Download CSV',
+    noResults: 'No results',
+    noResultsHint: 'Try broadening your filters or changing the search',
+    noSaved: 'No saved tenders',
+    noSavedHint: 'Save tenders with ☆ to see them here',
+    view: 'View Tender',
+    days: 'days',
+    urgent: 'URGENT',
+    expired: 'EXPIRED',
+    entity: 'Entity',
+    category: 'Category',
+    status: 'Status',
+    noValue: 'Not available',
+    noLink: 'No link',
+    sortBy: 'Sort by',
+    sortDeadline: '📅 Most urgent',
+    sortValueDesc: '💰 Highest value',
+    sortValueAsc: '💰 Lowest value',
+    sortUrgency: '⚠ Urgency',
+    licitaciones: 'tenders',
+    licitacion: 'tender',
+    toastSaved: '⭐ Tender saved',
+    toastRemoved: '✓ Removed from saved',
+    lastUpdated: 'Updated',
+  },
+};
+
+function sortTenders(tenders, sortBy) {
+  return [...tenders].sort((a, b) => {
+    if (sortBy === 'value_desc') return (parseFloat(b.valor) || 0) - (parseFloat(a.valor) || 0);
+    if (sortBy === 'value_asc') return (parseFloat(a.valor) || 0) - (parseFloat(b.valor) || 0);
+    if (sortBy === 'urgency') {
+      const aU = a.dias_restantes != null && a.dias_restantes < 7;
+      const bU = b.dias_restantes != null && b.dias_restantes < 7;
+      if (aU && !bU) return -1;
+      if (!aU && bU) return 1;
+      return (a.dias_restantes ?? 999) - (b.dias_restantes ?? 999);
+    }
+    // deadline_asc (default)
+    return (a.dias_restantes ?? 999) - (b.dias_restantes ?? 999);
+  });
+}
+
+export default function TendersPage() {
+  const { language } = useLanguage();
+  const str = STRINGS[language] || STRINGS.es;
+
+  const { tenders, loading, error, lastUpdated } = useTenders();
+  const { saved, toggleSave, isSaved } = useSaved();
+  const { toasts, addToast } = useToast();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('all');
   const [maxValue, setMaxValue] = useState(1000000);
   const [maxDays, setMaxDays] = useState(365);
   const [viewMode, setViewMode] = useState('all');
+  const [sortBy, setSortBy] = useState('deadline_asc');
+  const [selectedTender, setSelectedTender] = useState(null);
 
-  const t = {
-    es: {
-      title: 'Licitaciones de Agua',
-      search: 'Buscar...',
-      filters: 'Filtros',
-      country: 'País',
-      value: 'Valor máx',
-      deadline: 'Plazo',
-      all: 'Todos',
-      saved: 'Guardados',
-      mark: 'Guardar',
-      remove: 'Remover',
-      download: 'Descargar CSV',
-      noResults: 'Sin resultados',
-      view: 'Ver Licitación',
-      days: 'días',
-      urgent: 'URGENTE',
-    },
-    en: {
-      title: 'Water Tenders',
-      search: 'Search...',
-      filters: 'Filters',
-      country: 'Country',
-      value: 'Max Value',
-      deadline: 'Deadline',
-      all: 'All',
-      saved: 'Saved',
-      mark: 'Save',
-      remove: 'Remove',
-      download: 'Download CSV',
-      noResults: 'No results',
-      view: 'View Tender',
-      days: 'days',
-      urgent: 'URGENT',
-    }
-  };
+  const filtered = useMemo(() => {
+    let result = tenders.filter((t) => {
+      if (searchTerm && !t.titulo?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      if (selectedCountry !== 'all' && t.pais !== selectedCountry) return false;
+      const val = parseFloat(t.valor) || 0;
+      if (val > maxValue && val > 0) return false;
+      if ((t.dias_restantes ?? 365) > maxDays) return false;
+      return true;
+    });
+    if (viewMode === 'saved') result = result.filter((t) => isSaved(t.numero));
+    return sortTenders(result, sortBy);
+  }, [tenders, searchTerm, selectedCountry, maxValue, maxDays, viewMode, sortBy, saved]);
 
-  const str = t[language];
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const res = await fetch('/central-america-tenders-live.json');
-        const data = await res.json();
-        const allTenders = [];
-        
-        Object.entries(data.countries).forEach(([key, country]) => {
-          if (country.tenders && Array.isArray(country.tenders)) {
-            country.tenders.forEach((tender) => {
-              allTenders.push({
-                ...tender,
-                pais: key,
-                flag: country.flag,
-              });
-            });
-          }
-        });
-        
-        setTenders(allTenders);
-      } catch (e) {
-        console.error('Error loading tenders:', e);
-      }
-    };
-
-    loadData();
-    const saved = JSON.parse(localStorage.getItem('savedTenderIds') || '[]');
-    setSaved(saved);
-  }, []);
-
-  // Filter logic
-  const filtered = tenders.filter((t) => {
-    const matchSearch = !searchTerm || t.titulo?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchCountry = selectedCountry === 'all' || t.pais === selectedCountry;
-    const valor = parseInt(t.valor) || 0;
-    const matchValue = valor <= maxValue;
-    const matchDays = (t.dias_restantes || 365) <= maxDays;
-    
-    return matchSearch && matchCountry && matchValue && matchDays;
-  });
-
-  const displayed = viewMode === 'saved' 
-    ? filtered.filter(t => saved.includes(t.numero))
-    : filtered;
-
-  const toggleSave = (numero) => {
-    const updated = saved.includes(numero)
-      ? saved.filter(id => id !== numero)
-      : [...saved, numero];
-    setSaved(updated);
-    localStorage.setItem('savedTenderIds', JSON.stringify(updated));
+  const handleToggleSave = (numero) => {
+    const wasAdded = !isSaved(numero);
+    toggleSave(numero);
+    addToast(wasAdded ? str.toastSaved : str.toastRemoved, wasAdded ? 'success' : 'info');
   };
 
   const downloadCSV = () => {
-    const rows = displayed.map(t => [
+    const rows = filtered.map((t) => [
       t.flag || t.pais,
       t.numero,
-      t.titulo?.substring(0, 60),
+      t.titulo?.substring(0, 80),
       t.valor || 'N/A',
+      t.moneda || '',
       t.deadline,
+      t.dias_restantes ?? '',
       t.entidad,
+      t.url || '',
     ]);
     const csv = [
-      ['País', 'Licitación', 'Título', 'Valor', 'Plazo', 'Entidad'],
-      ...rows
-    ].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
+      ['País', 'Licitación', 'Título', 'Valor', 'Moneda', 'Plazo', 'Días restantes', 'Entidad', 'URL'],
+      ...rows,
+    ]
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `licitaciones-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
-    <div style={{ backgroundColor: '#1a1f36', minHeight: '100vh', color: '#fff' }}>
+    <div style={{ backgroundColor: '#151b2e', minHeight: '100vh', color: '#e8eaf0' }}>
       {/* Header */}
-      <header style={{ backgroundColor: '#0f1419', borderBottom: '1px solid #334466', padding: '16px', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>🌊 {str.title}</h1>
-            <button 
-              onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
-              style={{ padding: '8px 16px', backgroundColor: '#334466', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer' }}
-            >
-              {language === 'es' ? 'EN' : 'ES'}
-            </button>
+      <header style={{
+        backgroundColor: '#0f1420',
+        borderBottom: '1px solid #2e3d5e',
+        padding: '16px 20px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+      }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h1 style={{ fontSize: '20px', fontWeight: '700', margin: 0, color: '#e8eaf0' }}>
+              🌊 {str.title}
+            </h1>
+            {lastUpdated && (
+              <span style={{ fontSize: '11px', color: '#6b7a99' }}>
+                {str.lastUpdated}: {new Date(lastUpdated).toLocaleDateString(language === 'es' ? 'es-PA' : 'en-US')}
+              </span>
+            )}
           </div>
-
-          {/* Search */}
-          <input
-            type="text"
-            placeholder={str.search}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: '#222d47',
-              border: '1px solid #334466',
-              borderRadius: '6px',
-              color: '#fff',
-              fontSize: '14px',
-              boxSizing: 'border-box'
-            }}
-          />
         </div>
       </header>
 
       {/* Main */}
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px' }}>
-        {/* Filters - Mobile stacked */}
-        <div style={{ 
-          backgroundColor: '#222d47', 
-          border: '1px solid #334466', 
-          borderRadius: '8px', 
-          padding: '16px',
-          marginBottom: '24px'
-        }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px', marginTop: 0 }}>
-            ⚙️ {str.filters}
-          </h2>
+      <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '20px' }}>
+        <FilterPanel
+          searchTerm={searchTerm} setSearchTerm={setSearchTerm}
+          selectedCountry={selectedCountry} setSelectedCountry={setSelectedCountry}
+          maxValue={maxValue} setMaxValue={setMaxValue}
+          maxDays={maxDays} setMaxDays={setMaxDays}
+          viewMode={viewMode} setViewMode={setViewMode}
+          sortBy={sortBy} setSortBy={setSortBy}
+          savedCount={saved.length}
+          strings={str}
+        />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            {/* Country */}
-            <div>
-              <label style={{ fontSize: '12px', color: '#aaa', display: 'block', marginBottom: '6px' }}>
-                {str.country}
-              </label>
-              <select
-                value={selectedCountry}
-                onChange={(e) => setSelectedCountry(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  backgroundColor: '#1a1f36',
-                  border: '1px solid #334466',
-                  borderRadius: '4px',
-                  color: '#fff',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="all">Todas</option>
-                <option value="panama">🇵🇦 Panama</option>
-                <option value="costa_rica">🇨🇷 Costa Rica</option>
-                <option value="nicaragua">🇳🇮 Nicaragua</option>
-              </select>
-            </div>
-
-            {/* Value */}
-            <div>
-              <label style={{ fontSize: '12px', color: '#aaa', display: 'block', marginBottom: '6px' }}>
-                {str.value}: ${(maxValue/1000).toFixed(0)}K
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="1000000"
-                step="50000"
-                value={maxValue}
-                onChange={(e) => setMaxValue(parseInt(e.target.value))}
-                style={{ width: '100%', cursor: 'pointer' }}
-              />
-            </div>
-
-            {/* Days */}
-            <div>
-              <label style={{ fontSize: '12px', color: '#aaa', display: 'block', marginBottom: '6px' }}>
-                {str.deadline}: ≤ {maxDays} {str.days}
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="365"
-                value={maxDays}
-                onChange={(e) => setMaxDays(parseInt(e.target.value))}
-                style={{ width: '100%', cursor: 'pointer' }}
-              />
-            </div>
-
-            {/* View Toggle */}
-            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '8px' }}>
-              <button
-                onClick={() => setViewMode('all')}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  backgroundColor: viewMode === 'all' ? '#0066cc' : '#334466',
-                  border: 'none',
-                  borderRadius: '4px',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  fontWeight: 'bold'
-                }}
-              >
-                🔍 {str.all}
-              </button>
-              <button
-                onClick={() => setViewMode('saved')}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  backgroundColor: viewMode === 'saved' ? '#0066cc' : '#334466',
-                  border: 'none',
-                  borderRadius: '4px',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  fontWeight: 'bold'
-                }}
-              >
-                ⭐ {str.saved} ({saved.length})
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Results */}
+        {/* Results bar */}
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>
-            {displayed.length} {displayed.length === 1 ? 'licitación' : 'licitaciones'}
-          </h2>
-          {displayed.length > 0 && (
+          {!loading && (
+            <p style={{ margin: 0, fontSize: '14px', color: '#9ba8c0' }}>
+              <strong style={{ color: '#e8eaf0' }}>{filtered.length}</strong>{' '}
+              {filtered.length === 1 ? str.licitacion : str.licitaciones}
+            </p>
+          )}
+          {!loading && filtered.length > 0 && (
             <button
               onClick={downloadCSV}
               style={{
-                padding: '10px 16px',
-                backgroundColor: '#10b981',
-                border: 'none',
+                padding: '8px 14px',
+                backgroundColor: '#0d4f30',
+                border: '1px solid #1a8f57',
                 borderRadius: '6px',
-                color: '#fff',
+                color: '#7ec89e',
                 cursor: 'pointer',
-                fontWeight: 'bold'
+                fontWeight: '600',
+                fontSize: '12px',
               }}
             >
               📥 {str.download}
@@ -291,159 +233,52 @@ const TendersPage = () => {
           )}
         </div>
 
-        {/* Empty State */}
-        {displayed.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '32px 16px', color: '#aaa' }}>
-            {str.noResults}
+        {/* Content */}
+        {loading && <LoadingSkeleton count={6} />}
+
+        {!loading && error && (
+          <div style={{ textAlign: 'center', padding: '32px', color: '#ff7777' }}>
+            Error cargando datos: {error}
           </div>
         )}
 
-        {/* Tender Cards - Mobile responsive grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: '16px'
-        }}>
-          {displayed.map((tender) => {
-            const isUrgent = tender.dias_restantes < 7;
-            const isSaved = saved.includes(tender.numero);
+        {!loading && !error && filtered.length === 0 && (
+          <EmptyState mode={viewMode} strings={str} />
+        )}
 
-            return (
-              <article
+        {!loading && !error && filtered.length > 0 && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: '16px',
+          }}>
+            {filtered.map((tender) => (
+              <TenderCard
                 key={tender.numero}
-                style={{
-                  backgroundColor: '#222d47',
-                  border: isUrgent ? '2px solid #ff4444' : '1px solid #334466',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}
-              >
-                {/* Card Header */}
-                <div style={{
-                  padding: '12px',
-                  borderBottom: '1px solid #334466',
-                  backgroundColor: isUrgent ? 'rgba(255, 68, 68, 0.1)' : 'transparent'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, lineHeight: '1.3' }}>
-                      {tender.titulo?.substring(0, 50)}...
-                    </h3>
-                    {isUrgent && (
-                      <span style={{ 
-                        backgroundColor: '#ff4444', 
-                        color: '#fff', 
-                        padding: '2px 6px', 
-                        borderRadius: '3px',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        ⚠️ {str.urgent}
-                      </span>
-                    )}
-                  </div>
-                  <p style={{ fontSize: '11px', color: '#888', margin: 0 }}>
-                    {tender.flag} {tender.numero}
-                  </p>
-                </div>
-
-                {/* Card Body */}
-                <div style={{ padding: '12px', flex: 1 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                    <div>
-                      <p style={{ fontSize: '10px', color: '#888', margin: 0, marginBottom: '4px', textTransform: 'uppercase' }}>Valor</p>
-                      <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#0066cc', margin: 0 }}>
-                        ${parseInt(tender.valor || 0).toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p style={{ fontSize: '10px', color: '#888', margin: 0, marginBottom: '4px', textTransform: 'uppercase' }}>Plazo</p>
-                      <p style={{ fontSize: '12px', fontWeight: 'bold', margin: 0 }}>
-                        {tender.deadline}
-                      </p>
-                      {tender.dias_restantes && (
-                        <p style={{ fontSize: '11px', color: isUrgent ? '#ff4444' : '#aaa', margin: 0, marginTop: '2px' }}>
-                          {tender.dias_restantes} {str.days}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div style={{ borderTop: '1px solid #334466', paddingTop: '8px' }}>
-                    <p style={{ fontSize: '10px', color: '#888', margin: 0, marginBottom: '4px', textTransform: 'uppercase' }}>Entidad</p>
-                    <p style={{ fontSize: '12px', margin: 0, color: '#ccc' }}>{tender.entidad}</p>
-                  </div>
-                </div>
-
-                {/* Card Footer */}
-                <div style={{ padding: '12px', borderTop: '1px solid #334466', backgroundColor: '#1a1f36' }}>
-                  <button
-                    onClick={() => toggleSave(tender.numero)}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      marginBottom: '8px',
-                      backgroundColor: isSaved ? '#fbbf24' : '#334466',
-                      border: 'none',
-                      borderRadius: '4px',
-                      color: isSaved ? '#000' : '#fff',
-                      cursor: 'pointer',
-                      fontWeight: 'bold',
-                      fontSize: '14px'
-                    }}
-                  >
-                    {isSaved ? '⭐ ' : '☆ '} {isSaved ? str.remove : str.mark}
-                  </button>
-
-                  {tender.url && tender.url !== 'javascript:void(0)' ? (
-                    <a
-                      href={tender.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: 'block',
-                        padding: '10px',
-                        backgroundColor: '#0066cc',
-                        border: 'none',
-                        borderRadius: '4px',
-                        color: '#fff',
-                        textDecoration: 'none',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                        fontSize: '14px'
-                      }}
-                    >
-                      🔗 {str.view}
-                    </a>
-                  ) : (
-                    <button
-                      disabled
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        padding: '10px',
-                        backgroundColor: '#334466',
-                        border: 'none',
-                        borderRadius: '4px',
-                        color: '#888',
-                        cursor: 'not-allowed',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      {str.view}
-                    </button>
-                  )}
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                tender={tender}
+                isSaved={isSaved(tender.numero)}
+                onToggleSave={handleToggleSave}
+                onOpenModal={setSelectedTender}
+                strings={str}
+              />
+            ))}
+          </div>
+        )}
       </main>
+
+      {/* Modal */}
+      {selectedTender && (
+        <TenderModal
+          tender={selectedTender}
+          onClose={() => setSelectedTender(null)}
+          isSaved={isSaved(selectedTender.numero)}
+          onToggleSave={handleToggleSave}
+          strings={str}
+        />
+      )}
+
+      {/* Toasts */}
+      <ToastContainer toasts={toasts} />
     </div>
   );
-};
-
-export default TendersPage;
+}
