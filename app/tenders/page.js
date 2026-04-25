@@ -7,7 +7,6 @@ import { translations } from '../translations';
 export default function TendersPage() {
   const [tenders, setTenders] = useState([]);
   const [decisions, setDecisions] = useState({});
-  const [expanded, setExpanded] = useState({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [advancedFilters, setAdvancedFilters] = useState({
@@ -22,32 +21,32 @@ export default function TendersPage() {
   const t = translations[language];
 
   useEffect(() => {
-    // First try to load pliego data
-    fetch('~/.openclaw/agents/panama-scraper/TENDER_DATA_WITH_PLIEGO.json')
-      .then(res => {
-        if (!res.ok) throw new Error('Pliego data not available');
-        return res.json();
-      })
-      .catch(() => {
-        // Fallback to live data
-        return fetch('/idan-tenders-live.json').then(res => res.json());
-      })
-      .then(data => {
-        const tenderList = data.tenders || data;
-        setTenders(Array.isArray(tenderList) ? tenderList.map(tender => ({
-          ...tender,
-          fullId: tender.numero,
-          url: tender.url,
-          projectType: classifyProjectType(tender.title || tender.titulo),
-          daysRemaining: calculateDaysRemaining(tender.deadline || tender.fecha_cierre),
-          numericValue: parseValue(tender.estimated_value || tender.monto)
-        })) : []);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Error:', err);
-        setLoading(false);
-      });
+    // Load JSON data (prioritize pliego data)
+    Promise.all([
+      fetch('~/.openclaw/agents/panama-scraper/TENDER_DATA_WITH_PLIEGO.json')
+        .then(res => res.json())
+        .catch(() => null),
+      fetch('/idan-tenders-live.json')
+        .then(res => res.json())
+        .catch(() => null)
+    ]).then(([pliegoData, liveData]) => {
+      // Use pliego data if available, otherwise use live data
+      const data = pliegoData || liveData;
+      const tenderList = data.tenders || data;
+      
+      setTenders(Array.isArray(tenderList) ? tenderList.map(tender => ({
+        ...tender,
+        fullId: tender.numero,
+        url: tender.url,
+        projectType: classifyProjectType(tender.title || tender.titulo),
+        daysRemaining: calculateDaysRemaining(tender.deadline || tender.fecha_cierre),
+        numericValue: parseValue(tender.estimated_value || tender.monto)
+      })) : []);
+      setLoading(false);
+    }).catch(err => {
+      console.error('Error loading tenders:', err);
+      setLoading(false);
+    });
 
     const saved = localStorage.getItem('tender-decisions');
     if (saved) setDecisions(JSON.parse(saved));
@@ -86,10 +85,6 @@ export default function TendersPage() {
     }
     setDecisions(updated);
     localStorage.setItem('tender-decisions', JSON.stringify(updated));
-  };
-
-  const toggleExpanded = (id) => {
-    setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const getFilteredTenders = () => {
@@ -136,7 +131,7 @@ export default function TendersPage() {
     <main className="tenders-page">
       <header className="tenders-header">
         <h1>Dashboard de Licitaciones IDAN</h1>
-        <p>Rastreo + Pleigos de oportunidades de agua del gobierno de Panamá</p>
+        <p>Rastreo completo + Pliego de Cargos de oportunidades de agua del gobierno de Panamá</p>
         <div className="tender-count">Licitaciones Abiertas: <strong>{stats.total}</strong></div>
       </header>
 
@@ -307,95 +302,96 @@ export default function TendersPage() {
                   </div>
                 </div>
 
-                {/* Pliego & Documents Section */}
+                {/* ALWAYS VISIBLE Pliego Section */}
                 {tender.pliego && (
-                  <div className="pliego-section">
-                    <button 
-                      className="expand-btn"
-                      onClick={() => toggleExpanded(tender.id)}
-                    >
-                      <span className={`arrow ${expanded[tender.id] ? 'open' : ''}`}>▼</span>
-                      <strong>📋 Pliego de Cargos + Documentos</strong>
-                    </button>
-
-                    {expanded[tender.id] && (
-                      <div className="pliego-content">
-                        {/* Pliego PDF Link */}
-                        <div className="pliego-block">
-                          <h4>📄 Pliego de Cargos</h4>
-                          <a 
-                            href={tender.pliego.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="btn-pliego"
-                          >
-                            {tender.pliego.tipo}: {tender.pliego.titulo}
-                          </a>
-                          {tender.pliego.tamaño && <p className="size-note">Tamaño: {tender.pliego.tamaño}</p>}
-                        </div>
-
-                        {/* Required Documents */}
-                        {tender.documentos_requeridos && (
-                          <div className="pliego-block">
-                            <h4>✅ Documentos Requeridos</h4>
-                            <ul className="doc-list">
-                              {tender.documentos_requeridos.slice(0, 5).map((doc, i) => (
-                                <li key={i}>{doc}</li>
-                              ))}
-                              {tender.documentos_requeridos.length > 5 && (
-                                <li className="more">+ {tender.documentos_requeridos.length - 5} más (ver pliego)</li>
-                              )}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* Key Conditions */}
-                        {tender.condiciones && (
-                          <div className="pliego-block">
-                            <h4>📅 Condiciones Clave</h4>
-                            <div className="conditions-grid">
-                              <div className="cond-item">
-                                <span className="cond-label">Lugar:</span>
-                                <span className="cond-value">{tender.condiciones.lugar_presentacion}</span>
-                              </div>
-                              <div className="cond-item">
-                                <span className="cond-label">Formato:</span>
-                                <span className="cond-value">{tender.condiciones.formato_presentacion}</span>
-                              </div>
-                              <div className="cond-item">
-                                <span className="cond-label">Evaluación:</span>
-                                <span className="cond-value">{tender.condiciones.evaluacion?.metodologia}</span>
-                              </div>
-                              <div className="cond-item">
-                                <span className="cond-label">Validez Oferta:</span>
-                                <span className="cond-value">{tender.condiciones.validez_oferta}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Contact Info */}
-                        {tender.contacto && (
-                          <div className="pliego-block">
-                            <h4>📞 Contacto</h4>
-                            <div className="contact-info">
-                              <div className="contact-item">
-                                <span className="label">Email:</span>
-                                <a href={`mailto:${tender.contacto.email}`}>{tender.contacto.email}</a>
-                              </div>
-                              <div className="contact-item">
-                                <span className="label">Teléfono:</span>
-                                <span>{tender.contacto.telefono_principal}</span>
-                              </div>
-                              <div className="contact-item">
-                                <span className="label">Dirección:</span>
-                                <span>{tender.contacto.direccion?.calle} {tender.contacto.direccion?.numero}, Piso {tender.contacto.direccion?.piso}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                  <div className="pliego-section visible">
+                    <h4 className="pliego-title">📋 Pliego de Cargos + Información Importante</h4>
+                    
+                    <div className="pliego-content">
+                      {/* Pliego PDF Link */}
+                      <div className="pliego-block">
+                        <h5>📄 Descargar Pliego de Cargos</h5>
+                        <a 
+                          href={tender.pliego.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="btn-pliego"
+                        >
+                          {tender.pliego.tipo}: {tender.pliego.titulo}
+                        </a>
+                        {tender.pliego.tamaño && <p className="size-note">Tamaño: {tender.pliego.tamaño}</p>}
                       </div>
-                    )}
+
+                      {/* Required Documents */}
+                      {tender.documentos_requeridos && (
+                        <div className="pliego-block">
+                          <h5>✅ Documentos Requeridos para Licitar</h5>
+                          <ul className="doc-list">
+                            {tender.documentos_requeridos.map((doc, i) => (
+                              <li key={i}>✓ {doc}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Key Conditions */}
+                      {tender.condiciones && (
+                        <div className="pliego-block">
+                          <h5>📅 Condiciones de Presentación</h5>
+                          <div className="conditions-grid">
+                            <div className="cond-item">
+                              <span className="cond-label">📍 Lugar:</span>
+                              <span className="cond-value">{tender.condiciones.lugar_presentacion}</span>
+                            </div>
+                            <div className="cond-item">
+                              <span className="cond-label">📦 Formato:</span>
+                              <span className="cond-value">{tender.condiciones.formato_presentacion}</span>
+                            </div>
+                            <div className="cond-item">
+                              <span className="cond-label">⏱️ Cierre:</span>
+                              <span className="cond-value">{tender.condiciones.plazo_presentacion?.split('T')[0]} 23:59</span>
+                            </div>
+                            <div className="cond-item">
+                              <span className="cond-label">🎯 Evaluación:</span>
+                              <span className="cond-value">{tender.condiciones.evaluacion?.metodologia}</span>
+                            </div>
+                            <div className="cond-item">
+                              <span className="cond-label">💼 Validez Oferta:</span>
+                              <span className="cond-value">{tender.condiciones.validez_oferta}</span>
+                            </div>
+                            <div className="cond-item">
+                              <span className="cond-label">❓ Preguntas:</span>
+                              <span className="cond-value">{tender.condiciones.preguntas_aclaraciones?.plazo}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Contact Info */}
+                      {tender.contacto && (
+                        <div className="pliego-block">
+                          <h5>📞 Contacto para Dudas</h5>
+                          <div className="contact-info">
+                            <div className="contact-item">
+                              <span className="label">📧 Email:</span>
+                              <a href={`mailto:${tender.contacto.email}`}>{tender.contacto.email}</a>
+                            </div>
+                            <div className="contact-item">
+                              <span className="label">☎️ Teléfono:</span>
+                              <span>{tender.contacto.telefono_principal}</span>
+                            </div>
+                            <div className="contact-item">
+                              <span className="label">🏢 Dirección:</span>
+                              <span>{tender.contacto.direccion?.calle} {tender.contacto.direccion?.numero}, Piso {tender.contacto.direccion?.piso}, {tender.contacto.direccion?.ciudad}</span>
+                            </div>
+                            <div className="contact-item">
+                              <span className="label">🕐 Horario:</span>
+                              <span>{tender.contacto.horario_atencion}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -405,14 +401,14 @@ export default function TendersPage() {
                     className={`action-btn success ${decisions[tender.id]?.choice === 'yes' ? 'active' : ''}`}
                     title="Marcar como interesante"
                   >
-                    Interesante
+                    ✓ Interesante
                   </button>
                   <button
                     onClick={() => toggleDecision(tender.id, 'no')}
                     className={`action-btn danger ${decisions[tender.id]?.choice === 'no' ? 'active' : ''}`}
                     title="Marcar como descartada"
                   >
-                    Descartar
+                    ✗ Descartar
                   </button>
                 </div>
               </article>
@@ -477,7 +473,7 @@ export default function TendersPage() {
         .badge { display: inline-block; padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: white; }
         .badge.success { background: var(--success); }
         .badge.danger { background: var(--error); }
-        .tender-body { padding: 1.5rem; }
+        .tender-body { padding: 1.5rem; border-bottom: 1px solid var(--border); }
         .tender-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 1.5rem; }
         .tender-info { display: grid; gap: 1rem; }
         .info-item { display: grid; gap: 0.25rem; }
@@ -486,30 +482,26 @@ export default function TendersPage() {
         .info-item .deadline { color: var(--warning); }
         .info-item .days { font-size: 0.85rem; color: var(--text-secondary); }
         .info-item .category { text-transform: capitalize; color: var(--primary); font-weight: 600; }
-        .tender-cta { margin-bottom: 1rem; }
+        .tender-cta { margin-bottom: 0; }
         .btn-link { display: inline-block; padding: 0.75rem 1.5rem; background: var(--primary); color: white; border-radius: 6px; text-decoration: none; font-weight: 600; transition: all 0.2s; font-size: 0.9rem; }
         .btn-link:hover { background: #003370; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 74, 148, 0.25); }
         
-        /* Pliego Section */
-        .pliego-section { padding: 0 1.5rem; border-top: 1px solid var(--border); }
-        .expand-btn { width: 100%; padding: 1rem; background: #f9fafb; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; font-weight: 600; color: var(--text-primary); transition: all 0.2s; }
-        .expand-btn:hover { background: #f3f4f6; }
-        .arrow { display: inline-block; transition: transform 0.2s; font-size: 0.8rem; }
-        .arrow.open { transform: rotate(180deg); }
-        .pliego-content { padding: 1.5rem; border-top: 1px solid var(--border); background: #f9fafb; }
-        .pliego-block { margin-bottom: 1.5rem; }
-        .pliego-block:last-child { margin-bottom: 0; }
-        .pliego-block h4 { margin: 0 0 0.75rem 0; color: var(--text-primary); font-size: 0.95rem; font-weight: 600; }
+        /* PLIEGO ALWAYS VISIBLE */
+        .pliego-section { padding: 1.5rem; border-top: 2px solid #004A94; background: #f0f4f8; }
+        .pliego-section.visible { display: block; }
+        .pliego-title { margin: 0 0 1.5rem 0; font-size: 1.1rem; font-weight: 700; color: var(--primary); font-family: 'Oswald', sans-serif; }
+        .pliego-content { display: grid; gap: 1.5rem; }
+        .pliego-block { background: white; padding: 1.5rem; border-radius: 6px; border-left: 4px solid var(--primary); }
+        .pliego-block h5 { margin: 0 0 0.75rem 0; color: var(--text-primary); font-size: 0.95rem; font-weight: 600; }
         .btn-pliego { display: block; padding: 0.75rem 1rem; background: var(--primary); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; text-align: center; margin-bottom: 0.5rem; transition: all 0.2s; }
         .btn-pliego:hover { background: #003370; transform: translateY(-1px); }
         .size-note { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
         .doc-list { margin: 0; padding-left: 1.5rem; }
         .doc-list li { color: var(--text-primary); margin-bottom: 0.4rem; font-size: 0.9rem; }
-        .doc-list li.more { color: var(--text-secondary); font-style: italic; }
-        .conditions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .conditions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
         .cond-item { display: grid; gap: 0.25rem; }
         .cond-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
-        .cond-value { font-size: 0.9rem; color: var(--text-primary); }
+        .cond-value { font-size: 0.9rem; color: var(--text-primary); font-weight: 500; }
         .contact-info { display: grid; gap: 0.75rem; }
         .contact-item { display: grid; gap: 0.25rem; }
         .contact-item .label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
