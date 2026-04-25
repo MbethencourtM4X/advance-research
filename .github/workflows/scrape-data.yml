@@ -1,0 +1,87 @@
+name: Scrape Central America Tenders
+
+on:
+  schedule:
+    # Run 4x daily at 06:00, 06:30, 07:00, 08:00 AST (UTC-4 = 10:00, 10:30, 11:00, 12:00 UTC)
+    - cron: '0 10 * * *'
+    - cron: '30 10 * * *'
+    - cron: '0 11 * * *'
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+    inputs:
+      country:
+        description: 'Country to scrape (all | nicaragua | costa_rica | panama)'
+        required: false
+        default: 'all'
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Scrape Nicaragua (SISCAE)
+        if: ${{ github.event.inputs.country == 'all' || github.event.inputs.country == 'nicaragua' || github.event_name == 'schedule' }}
+        run: node scripts/scrape-nicaragua.js
+        env:
+          NODE_ENV: production
+        continue-on-error: true  # Don't fail the whole job if one country fails
+
+      - name: Scrape Costa Rica (SICOP)
+        if: ${{ github.event.inputs.country == 'all' || github.event.inputs.country == 'costa_rica' || github.event_name == 'schedule' }}
+        run: node scripts/scrape-costa-rica.js
+        env:
+          NODE_ENV: production
+        continue-on-error: true
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet public/central-america-tenders-live.json && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push data update
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "Advance Scraper Bot"
+          git config user.email "scraper@advance-idan.bot"
+          git add public/central-america-tenders-live.json
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M UTC")
+          git commit -m "data: auto-update tenders [$TIMESTAMP]"
+          git push
+
+      - name: No changes
+        if: steps.changes.outputs.changed == 'false'
+        run: echo "No new tender data — no commit needed."
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Scrape Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Run time: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          python3 -c "
+          import json
+          with open('public/central-america-tenders-live.json') as f:
+              d = json.load(f)
+          print('| Country | Tenders |')
+          print('|---|---|')
+          for k, v in d.get('countries', {}).items():
+              n = len(v.get('tenders', []))
+              print(f'| {v.get(\"flag\",\"\")} {k} | {n} |')
+          print(f'\\nTimestamp: {d.get(\"timestamp\",\"\")}')
+          " >> $GITHUB_STEP_SUMMARY
