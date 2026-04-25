@@ -14,7 +14,8 @@ export default function TendersPage() {
     valueMax: 1000000,
     daysUrgency: 'all',
     projectType: 'all',
-    searchQuery: ''
+    searchQuery: '',
+    estado: 'open' // Filter by estado
   });
   const { language } = useLanguage();
   const t = translations[language];
@@ -23,21 +24,14 @@ export default function TendersPage() {
     fetch('/idan-tenders-live.json')
       .then(res => res.json())
       .then(data => {
-        setTenders((data.tenders || []).map(tender => {
-          // Use FULL tender ID for URL
-          const fullId = tender.id; // e.g., "IDAN-LICIT-2026-0001"
-          // Panama Compra URL structure with full ID
-          const url = `https://www.panamacompra.gob.pa/licitacion/${fullId}`;
-          
-          return {
-            ...tender,
-            fullId: fullId,
-            url: url,
-            projectType: classifyProjectType(tender.title),
-            daysRemaining: calculateDaysRemaining(tender.deadline),
-            numericValue: parseValue(tender.estimated_value)
-          };
-        }));
+        setTenders((data.tenders || []).map(tender => ({
+          ...tender,
+          fullId: tender.numero,
+          url: tender.url,
+          projectType: classifyProjectType(tender.title),
+          daysRemaining: calculateDaysRemaining(tender.deadline),
+          numericValue: parseValue(tender.estimated_value)
+        })));
         setLoading(false);
       })
       .catch(err => console.error('Error:', err));
@@ -102,15 +96,20 @@ export default function TendersPage() {
 
       if (advancedFilters.searchQuery && !t.title.toLowerCase().includes(advancedFilters.searchQuery.toLowerCase())) return false;
 
+      // Filter by Estado: only ABIERTA and VIGENTE
+      if (advancedFilters.estado === 'open') {
+        if (t.estado !== 'ABIERTA' && t.estado !== 'VIGENTE') return false;
+      }
+
       return true;
     });
   };
 
   const stats = {
-    total: tenders.length,
+    total: tenders.filter(t => t.estado === 'ABIERTA' || t.estado === 'VIGENTE').length,
     interested: Object.values(decisions).filter(d => d?.choice === 'yes').length,
     notInterested: Object.values(decisions).filter(d => d?.choice === 'no').length,
-    pending: tenders.length - Object.keys(decisions).length
+    pending: tenders.filter(t => t.estado === 'ABIERTA' || t.estado === 'VIGENTE').length - Object.keys(decisions).length
   };
 
   const filtered = getFilteredTenders();
@@ -121,13 +120,13 @@ export default function TendersPage() {
       <header className="tenders-header">
         <h1>Dashboard de Licitaciones IDAN</h1>
         <p>Rastreo de oportunidades de agua del gobierno de Panamá</p>
-        <div className="tender-count">Total de Licitaciones: <strong>{stats.total}</strong></div>
+        <div className="tender-count">Licitaciones Abiertas: <strong>{stats.total}</strong></div>
       </header>
 
       <section className="stats-section">
         <div className="stats-grid">
           <div className="stat-card primary">
-            <div className="stat-label">Total</div>
+            <div className="stat-label">Total Abiertas</div>
             <div className="stat-number">{stats.total}</div>
           </div>
           <div className="stat-card success">
@@ -244,7 +243,7 @@ export default function TendersPage() {
       ) : filtered.length > 0 ? (
         <section className="tenders-section">
           <div className="tenders-summary">
-            Mostrando {filtered.length} de {tenders.length} licitaciones
+            Mostrando {filtered.length} de {stats.total} licitaciones abiertas
           </div>
           <div className="tenders-list">
             {filtered.map(tender => (
@@ -252,7 +251,7 @@ export default function TendersPage() {
                 <div className="tender-header">
                   <div>
                     <h3>{tender.title}</h3>
-                    <div className="tender-id">Licitación: <strong>{tender.fullId}</strong></div>
+                    <div className="tender-id">Licitación: <strong>{tender.fullId}</strong> | Estado: <strong>{tender.estado}</strong></div>
                   </div>
                   <div className="tender-decision">
                     {decisions[tender.id]?.choice === 'yes' && <span className="badge success">Interesante</span>}
