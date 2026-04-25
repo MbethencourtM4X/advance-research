@@ -149,7 +149,7 @@
           "deadline": "02/05/2026 08:00",
           "valor": "N/A",
           "moneda": "CRC",
-          "url": ""
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LD-000021-0028300001"
         },
         {
           "numero": "2026LD-000020-0028300001",
@@ -158,7 +158,7 @@
           "deadline": "02/05/2026 08:00",
           "valor": "N/A",
           "moneda": "CRC",
-          "url": ""
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LD-000020-0028300001"
         },
         {
           "numero": "2026LY-000006-0007100001",
@@ -167,7 +167,7 @@
           "deadline": "26/05/2026 11:00",
           "valor": "N/A",
           "moneda": "CRC",
-          "url": ""
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LY-000006-0007100001"
         },
         {
           "numero": "2026LY-000005-0007100001",
@@ -176,7 +176,7 @@
           "deadline": "26/05/2026 10:00",
           "valor": "N/A",
           "moneda": "CRC",
-          "url": ""
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LY-000005-0007100001"
         },
         {
           "numero": "2026LE-000003-0025700001",
@@ -185,7 +185,7 @@
           "deadline": "06/05/2026 17:15",
           "valor": "N/A",
           "moneda": "CRC",
-          "url": ""
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LE-000003-0025700001"
         },
         {
           "numero": "2026LY-000002-0015800001",
@@ -194,7 +194,7 @@
           "deadline": "20/05/2026 00:00",
           "valor": "N/A",
           "moneda": "CRC",
-          "url": ""
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LY-000002-0015800001"
         },
         {
           "numero": "2026PX-000019-0041342028",
@@ -203,7 +203,7 @@
           "deadline": "04/05/2026 07:01",
           "valor": "N/A",
           "moneda": "CRC",
-          "url": ""
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026PX-000019-0041342028"
         },
         {
           "numero": "2026PX-000031-0014400001",
@@ -212,7 +212,7 @@
           "deadline": "29/04/2026 08:00",
           "valor": "N/A",
           "moneda": "CRC",
-          "url": ""
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026PX-000031-0014400001"
         },
         {
           "numero": "2026LY-000002-0023100001",
@@ -221,7 +221,7 @@
           "deadline": "19/05/2026 11:01",
           "valor": "N/A",
           "moneda": "CRC",
-          "url": ""
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LY-000002-0023100001"
         },
         {
           "numero": "2026LD-000019-0028300001",
@@ -230,7 +230,7 @@
           "deadline": "02/05/2026 08:00",
           "valor": "N/A",
           "moneda": "CRC",
-          "url": ""
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LD-000019-0028300001"
         }
       ],
       "total_searched": 10,
@@ -242,26 +242,7 @@
       "source": "nicaraguacompra.gob.ni",
       "last_update": "2026-04-25T14:11:00.244Z",
       "status": "ready",
-      "tenders": [
-        {
-          "numero": "NicaraguaCompra - Requiere Mozilla Firefox 4.1 o Posterior / Internet Explorer 8.0 o Posterior",
-          "titulo": "NicaraguaCompra - Requiere Mozilla Firefox 4.1 o Posterior / Internet Explorer 8.0 o Posterior",
-          "entidad": "N/A",
-          "deadline": "N/A",
-          "valor": "N/A",
-          "moneda": "NIO",
-          "url": ""
-        },
-        {
-          "numero": "© 2006 Gobierno de Nicaragua, Dirección General de Contrataciones del Estado. Todos los derechos reservados.\n                        Legal",
-          "titulo": "© 2006 Gobierno de Nicaragua, Dirección General de Contrataciones del Estado. Todos los derechos reservados.",
-          "entidad": "Legal",
-          "deadline": "N/A",
-          "valor": "N/A",
-          "moneda": "NIO",
-          "url": ""
-        }
-      ]
+      "tenders": []
     },
     "el_salvador": {
       "flag": "🇸🇻",
