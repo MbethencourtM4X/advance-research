@@ -120,6 +120,11 @@ export default function TendersPage() {
   const filtered = getFilteredTenders();
   const urgentCount = filtered.filter(t => t.daysRemaining < 7).length;
 
+  // Helper function to build búsqueda pliego link with tender number
+  const getBusquedaPliegoUrl = (tenderNumber) => {
+    return `https://www.panamacompra.gob.pa/inicio/portal-interno/#/proceso/busqueda-avanzada?numero=${encodeURIComponent(tenderNumber)}`;
+  };
+
   return (
     <main className="tenders-page">
       <header className="tenders-header">
@@ -285,12 +290,12 @@ export default function TendersPage() {
 
                   <div className="tender-cta">
                     <a 
-                      href={tender.url} 
+                      href={getBusquedaPliegoUrl(tender.fullId)}
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="btn-link"
                     >
-                      Ver Licitación en Panamá Compra: {tender.fullId}
+                      📄 Ver Pliego: {tender.fullId}
                     </a>
                   </div>
                 </div>
@@ -370,7 +375,7 @@ export default function TendersPage() {
                     </div>
 
                     <div className="pliego-note">
-                      ℹ️ Para detalles técnicos completos, especificaciones y términos exactos, descargue el Pliego de Cargos oficial desde panamacompra.gob.pa
+                      ℹ️ Haz clic en "Ver Pliego" arriba para acceder a la búsqueda de pliego de cargos oficial
                     </div>
                   </div>
                 </div>
