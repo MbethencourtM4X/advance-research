@@ -10,6 +10,7 @@ export default function TendersPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [countryFilter, setCountryFilter] = useState('all');
+  const [view, setView] = useState('search');
   const [advancedFilters, setAdvancedFilters] = useState({
     valueMin: 0,
     valueMax: 1000000,
@@ -24,7 +25,6 @@ export default function TendersPage() {
     fetch('/central-america-tenders-live.json')
       .then(res => res.json())
       .then(data => {
-        // Flatten all tenders from all countries
         const tenders = [];
         Object.values(data.countries).forEach(country => {
           if (country.tenders && Array.isArray(country.tenders)) {
@@ -95,6 +95,16 @@ export default function TendersPage() {
     return flags[pais] || '🌍';
   };
 
+  const getCountryName = (pais) => {
+    const names = {
+      panama: 'Panamá',
+      costa_rica: 'Costa Rica',
+      nicaragua: 'Nicaragua',
+      el_salvador: 'El Salvador'
+    };
+    return names[pais] || pais;
+  };
+
   const getFilteredTenders = () => {
     return allTenders.filter(t => {
       const decision = decisions[t.id];
@@ -125,6 +135,45 @@ export default function TendersPage() {
     });
   };
 
+  const getActiveTenders = () => {
+    return allTenders.filter(t => decisions[t.id]?.choice === 'yes');
+  };
+
+  const exportToCSV = () => {
+    const activos = getActiveTenders();
+    if (activos.length === 0) {
+      alert('No hay licitaciones marcadas como interesantes');
+      return;
+    }
+
+    const headers = ['País', 'Licitación', 'Título', 'Valor', 'Moneda', 'Deadline', 'Días Restantes', 'Entidad'];
+    const rows = activos.map(t => [
+      getCountryName(t.pais),
+      t.numero,
+      t.titulo,
+      t.valor,
+      t.moneda,
+      t.deadline,
+      t.daysRemaining,
+      t.entidad
+    ]);
+
+    let csv = headers.join(',') + '\n';
+    rows.forEach(row => {
+      csv += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',') + '\n';
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `licitaciones-activas-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
   const stats = {
     total: allTenders.filter(t => t.estado === 'ABIERTA').length,
     interested: Object.values(decisions).filter(d => d?.choice === 'yes').length,
@@ -133,6 +182,7 @@ export default function TendersPage() {
   };
 
   const filtered = getFilteredTenders();
+  const activos = getActiveTenders();
   const urgentCount = filtered.filter(t => t.daysRemaining < 7).length;
 
   const handleSearchPliego = (tenderNumber, pais) => {
@@ -158,195 +208,289 @@ export default function TendersPage() {
         <div className="tender-count">Licitaciones Abiertas: <strong>{stats.total}</strong></div>
       </header>
 
-      <section className="stats-section">
-        <div className="stats-grid">
-          <div className="stat-card primary">
-            <div className="stat-label">Total Abiertas</div>
-            <div className="stat-number">{stats.total}</div>
-          </div>
-          <div className="stat-card success">
-            <div className="stat-label">Interesantes</div>
-            <div className="stat-number">{stats.interested}</div>
-          </div>
-          <div className="stat-card warning">
-            <div className="stat-label">Descartadas</div>
-            <div className="stat-number">{stats.notInterested}</div>
-          </div>
-          <div className="stat-card pending">
-            <div className="stat-label">Pendientes</div>
-            <div className="stat-number">{stats.pending}</div>
-          </div>
-          {urgentCount > 0 && (
-            <div className="stat-card urgent">
-              <div className="stat-label">Urgentes (&lt; 7 días)</div>
-              <div className="stat-number">{urgentCount}</div>
-            </div>
-          )}
-        </div>
+      <section className="view-switcher">
+        <button 
+          className={`view-btn ${view === 'search' ? 'active' : ''}`}
+          onClick={() => setView('search')}
+        >
+          🔍 Buscar
+        </button>
+        <button 
+          className={`view-btn ${view === 'activas' ? 'active' : ''}`}
+          onClick={() => setView('activas')}
+        >
+          ⭐ Licitaciones Activas ({stats.interested})
+        </button>
       </section>
 
-      <section className="filters-section">
-        <h2>Filtros</h2>
-        
-        <div className="filters-container">
-          <div className="filter-group">
-            <label>País</label>
-            <select 
-              value={countryFilter}
-              onChange={(e) => setCountryFilter(e.target.value)}
-            >
-              <option value="all">Todos los países</option>
-              <option value="panama">🇵🇦 Panamá</option>
-              <option value="costa_rica">🇨🇷 Costa Rica</option>
-              <option value="nicaragua">🇳🇮 Nicaragua</option>
-              <option value="el_salvador">🇸🇻 El Salvador</option>
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label>Buscar por título</label>
-            <input 
-              type="text" 
-              placeholder="Ej: desinfección, medidores, agua..."
-              value={advancedFilters.searchQuery}
-              onChange={(e) => setAdvancedFilters({...advancedFilters, searchQuery: e.target.value})}
-              className="search-input"
-            />
-          </div>
-
-          <div className="filter-group">
-            <label>Rango de Valor</label>
-            <div className="filter-inputs">
-              <input 
-                type="number" 
-                min="0" 
-                max="1000000"
-                value={advancedFilters.valueMin}
-                onChange={(e) => setAdvancedFilters({...advancedFilters, valueMin: parseInt(e.target.value) || 0})}
-              />
-              <span>–</span>
-              <input 
-                type="number" 
-                min="0" 
-                max="1000000"
-                value={advancedFilters.valueMax}
-                onChange={(e) => setAdvancedFilters({...advancedFilters, valueMax: parseInt(e.target.value) || 1000000})}
-              />
-            </div>
-          </div>
-
-          <div className="filter-group">
-            <label>Urgencia</label>
-            <select 
-              value={advancedFilters.daysUrgency}
-              onChange={(e) => setAdvancedFilters({...advancedFilters, daysUrgency: e.target.value})}
-            >
-              <option value="all">Todas</option>
-              <option value="urgent">Muy urgente (&lt; 10 días)</option>
-              <option value="soon">Próximas (10-20 días)</option>
-              <option value="later">Con tiempo (&gt; 20 días)</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="decision-filter">
-          <span>Filtrar por decisión:</span>
-          <div className="filter-buttons">
-            {[
-              { v: 'all', l: 'Todos', c: 'primary' },
-              { v: 'pending', l: 'Pendientes', c: 'pending' },
-              { v: 'yes', l: 'Interesantes', c: 'success' },
-              { v: 'no', l: 'Descartadas', c: 'danger' }
-            ].map(f => (
-              <button
-                key={f.v}
-                onClick={() => setFilter(f.v)}
-                className={`filter-btn ${f.c} ${filter === f.v ? 'active' : ''}`}
-              >
-                {f.l}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {loading ? (
-        <div className="loading">
-          <div className="loading-spinner"></div>
-          <p>Cargando licitaciones...</p>
-        </div>
-      ) : filtered.length > 0 ? (
-        <section className="tenders-section">
-          <div className="tenders-summary">
-            Mostrando {filtered.length} de {stats.total} licitaciones abiertas
-          </div>
-          <div className="tenders-list">
-            {filtered.map(tender => (
-              <article key={tender.id} className={`tender-card ${decisions[tender.id]?.choice ? 'decided-' + decisions[tender.id].choice : 'undecided'}`}>
-                <div className="tender-header">
-                  <div>
-                    <h3>{getCountryFlag(tender.pais)} {tender.titulo}</h3>
-                    <div className="tender-id">Licitación: <strong>{tender.numero}</strong></div>
-                  </div>
-                  <div className="tender-decision">
-                    {decisions[tender.id]?.choice === 'yes' && <span className="badge success">Interesante</span>}
-                    {decisions[tender.id]?.choice === 'no' && <span className="badge danger">Descartada</span>}
-                  </div>
+      {view === 'search' ? (
+        <>
+          <section className="stats-section">
+            <div className="stats-grid">
+              <div className="stat-card primary">
+                <div className="stat-label">Total Abiertas</div>
+                <div className="stat-number">{stats.total}</div>
+              </div>
+              <div className="stat-card success">
+                <div className="stat-label">Interesantes</div>
+                <div className="stat-number">{stats.interested}</div>
+              </div>
+              <div className="stat-card warning">
+                <div className="stat-label">Descartadas</div>
+                <div className="stat-number">{stats.notInterested}</div>
+              </div>
+              <div className="stat-card pending">
+                <div className="stat-label">Pendientes</div>
+                <div className="stat-number">{stats.pending}</div>
+              </div>
+              {urgentCount > 0 && (
+                <div className="stat-card urgent">
+                  <div className="stat-label">Urgentes (&lt; 7 días)</div>
+                  <div className="stat-number">{urgentCount}</div>
                 </div>
+              )}
+            </div>
+          </section>
 
-                <div className="tender-body">
-                  <div className="tender-grid">
-                    <div className="tender-info">
-                      <div className="info-item">
-                        <span className="label">Valor</span>
+          <section className="filters-section">
+            <h2>Filtros</h2>
+            
+            <div className="filters-container">
+              <div className="filter-group">
+                <label>País</label>
+                <select 
+                  value={countryFilter}
+                  onChange={(e) => setCountryFilter(e.target.value)}
+                >
+                  <option value="all">Todos los países</option>
+                  <option value="panama">🇵🇦 Panamá</option>
+                  <option value="costa_rica">🇨🇷 Costa Rica</option>
+                  <option value="nicaragua">🇳🇮 Nicaragua</option>
+                  <option value="el_salvador">🇸🇻 El Salvador</option>
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label>Buscar por título</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: desinfección, medidores, agua..."
+                  value={advancedFilters.searchQuery}
+                  onChange={(e) => setAdvancedFilters({...advancedFilters, searchQuery: e.target.value})}
+                  className="search-input"
+                />
+              </div>
+
+              <div className="filter-group">
+                <label>Rango de Valor</label>
+                <div className="filter-inputs">
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="1000000"
+                    value={advancedFilters.valueMin}
+                    onChange={(e) => setAdvancedFilters({...advancedFilters, valueMin: parseInt(e.target.value) || 0})}
+                  />
+                  <span>–</span>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="1000000"
+                    value={advancedFilters.valueMax}
+                    onChange={(e) => setAdvancedFilters({...advancedFilters, valueMax: parseInt(e.target.value) || 1000000})}
+                  />
+                </div>
+              </div>
+
+              <div className="filter-group">
+                <label>Urgencia</label>
+                <select 
+                  value={advancedFilters.daysUrgency}
+                  onChange={(e) => setAdvancedFilters({...advancedFilters, daysUrgency: e.target.value})}
+                >
+                  <option value="all">Todas</option>
+                  <option value="urgent">Muy urgente (&lt; 10 días)</option>
+                  <option value="soon">Próximas (10-20 días)</option>
+                  <option value="later">Con tiempo (&gt; 20 días)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="decision-filter">
+              <span>Filtrar por decisión:</span>
+              <div className="filter-buttons">
+                {[
+                  { v: 'all', l: 'Todos', c: 'primary' },
+                  { v: 'pending', l: 'Pendientes', c: 'pending' },
+                  { v: 'yes', l: 'Interesantes', c: 'success' },
+                  { v: 'no', l: 'Descartadas', c: 'danger' }
+                ].map(f => (
+                  <button
+                    key={f.v}
+                    onClick={() => setFilter(f.v)}
+                    className={`filter-btn ${f.c} ${filter === f.v ? 'active' : ''}`}
+                  >
+                    {f.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {loading ? (
+            <div className="loading">
+              <div className="loading-spinner"></div>
+              <p>Cargando licitaciones...</p>
+            </div>
+          ) : filtered.length > 0 ? (
+            <section className="tenders-section">
+              <div className="tenders-summary">
+                Mostrando {filtered.length} de {stats.total} licitaciones abiertas
+              </div>
+              <div className="tenders-list">
+                {filtered.map(tender => (
+                  <article key={tender.id} className={`tender-card ${decisions[tender.id]?.choice ? 'decided-' + decisions[tender.id].choice : 'undecided'}`}>
+                    <div className="tender-header">
+                      <div>
+                        <h3>{getCountryFlag(tender.pais)} {tender.titulo}</h3>
+                        <div className="tender-id">Licitación: <strong>{tender.numero}</strong></div>
+                      </div>
+                      <div className="tender-decision">
+                        {decisions[tender.id]?.choice === 'yes' && <span className="badge success">Interesante</span>}
+                        {decisions[tender.id]?.choice === 'no' && <span className="badge danger">Descartada</span>}
+                      </div>
+                    </div>
+
+                    <div className="tender-body">
+                      <div className="tender-grid">
+                        <div className="tender-info">
+                          <div className="info-item">
+                            <span className="label">Valor</span>
+                            <span className="value">{tender.valor} {tender.moneda}</span>
+                          </div>
+                          <div className="info-item">
+                            <span className="label">Deadline</span>
+                            <span className="value deadline">{tender.deadline}</span>
+                            <span className="days">{tender.daysRemaining} días</span>
+                          </div>
+                          <div className="info-item">
+                            <span className="label">Entidad</span>
+                            <span className="value">{tender.entidad}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="tender-cta">
+                        <button 
+                          onClick={() => handleSearchPliego(tender.numero, tender.pais)}
+                          className="btn-link"
+                        >
+                          📄 Ver Licitación
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="tender-actions">
+                      <button
+                        onClick={() => toggleDecision(tender.id, 'yes')}
+                        className={`action-btn success ${decisions[tender.id]?.choice === 'yes' ? 'active' : ''}`}
+                      >
+                        ⭐ Interesante
+                      </button>
+                      <button
+                        onClick={() => toggleDecision(tender.id, 'no')}
+                        className={`action-btn danger ${decisions[tender.id]?.choice === 'no' ? 'active' : ''}`}
+                      >
+                        ✗ Descartar
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <section className="empty-state">
+              <div className="empty-content">
+                <div className="empty-icon">Sin resultados</div>
+                <p>No hay licitaciones que coincidan con tus filtros.</p>
+              </div>
+            </section>
+          )}
+        </>
+      ) : (
+        <section className="activas-section">
+          <div className="activas-header">
+            <div>
+              <h2>⭐ Licitaciones Activas</h2>
+              <p>Licitaciones que has marcado como interesantes</p>
+            </div>
+            {activos.length > 0 && (
+              <button className="btn-export" onClick={exportToCSV}>
+                📥 Descargar CSV
+              </button>
+            )}
+          </div>
+
+          {activos.length > 0 ? (
+            <div className="activas-list">
+              {activos.map(tender => (
+                <article key={tender.id} className="activa-card">
+                  <div className="activa-header">
+                    <h3>{getCountryFlag(tender.pais)} {tender.titulo}</h3>
+                    <span className="badge success">Interesante</span>
+                  </div>
+
+                  <div className="activa-body">
+                    <div className="activa-grid">
+                      <div className="info-row">
+                        <span className="label">Licitación:</span>
+                        <span className="value">{tender.numero}</span>
+                      </div>
+                      <div className="info-row">
+                        <span className="label">País:</span>
+                        <span className="value">{getCountryName(tender.pais)}</span>
+                      </div>
+                      <div className="info-row">
+                        <span className="label">Valor:</span>
                         <span className="value">{tender.valor} {tender.moneda}</span>
                       </div>
-                      <div className="info-item">
-                        <span className="label">Deadline</span>
-                        <span className="value deadline">{tender.deadline}</span>
-                        <span className="days">{tender.daysRemaining} días</span>
+                      <div className="info-row">
+                        <span className="label">Deadline:</span>
+                        <span className="value deadline">{tender.deadline} ({tender.daysRemaining} días)</span>
                       </div>
-                      <div className="info-item">
-                        <span className="label">Entidad</span>
+                      <div className="info-row">
+                        <span className="label">Entidad:</span>
                         <span className="value">{tender.entidad}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="tender-cta">
+                  <div className="activa-actions">
                     <button 
                       onClick={() => handleSearchPliego(tender.numero, tender.pais)}
-                      className="btn-link"
+                      className="btn-view"
                     >
                       📄 Ver Licitación
                     </button>
+                    <button 
+                      onClick={() => toggleDecision(tender.id, 'no')}
+                      className="btn-remove"
+                    >
+                      Remover
+                    </button>
                   </div>
-                </div>
-
-                <div className="tender-actions">
-                  <button
-                    onClick={() => toggleDecision(tender.id, 'yes')}
-                    className={`action-btn success ${decisions[tender.id]?.choice === 'yes' ? 'active' : ''}`}
-                  >
-                    ✓ Interesante
-                  </button>
-                  <button
-                    onClick={() => toggleDecision(tender.id, 'no')}
-                    className={`action-btn danger ${decisions[tender.id]?.choice === 'no' ? 'active' : ''}`}
-                  >
-                    ✗ Descartar
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : (
-        <section className="empty-state">
-          <div className="empty-content">
-            <div className="empty-icon">Sin resultados</div>
-            <p>No hay licitaciones que coincidan con tus filtros.</p>
-          </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-content">
+                <div className="empty-icon">📋</div>
+                <h3>Sin licitaciones marcadas</h3>
+                <p>Ve a la sección "Buscar" y marca licitaciones como interesantes para verlas aquí.</p>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -356,6 +500,10 @@ export default function TendersPage() {
         .tenders-header h1 { font-family: 'Oswald', sans-serif; font-size: 2rem; margin-bottom: 0.5rem; }
         .tenders-header p { font-size: 1.1rem; opacity: 0.95; margin-bottom: 1rem; }
         .tender-count { font-size: 1.2rem; font-weight: 600; }
+        .view-switcher { max-width: 1200px; margin: 2rem auto 0; padding: 0 2rem; display: flex; gap: 1rem; border-bottom: 1px solid #ddd; }
+        .view-btn { padding: 1rem 1.5rem; background: transparent; border: none; cursor: pointer; font-weight: 600; color: #666; border-bottom: 3px solid transparent; transition: all 0.2s; }
+        .view-btn.active { color: #004A94; border-bottom-color: #004A94; }
+        .view-btn:hover { color: #004A94; }
         .stats-section { max-width: 1200px; margin: 0 auto; padding: 2rem; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
         .stat-card { padding: 1.5rem; border-radius: 8px; color: white; text-align: center; animation: slideIn 0.3s ease-out; }
@@ -416,10 +564,43 @@ export default function TendersPage() {
         .action-btn.danger.active { background: #ef4444; color: white; }
         .loading { text-align: center; padding: 4rem 2rem; }
         .loading-spinner { width: 40px; height: 40px; border: 4px solid #ddd; border-top-color: #004A94; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .empty-state { padding: 4rem 2rem; text-align: center; }
         .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .empty-content h3 { color: #333; margin-bottom: 0.5rem; }
+        .empty-content p { color: #666; }
+        .activas-section { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .activas-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
+        .activas-header h2 { font-family: 'Oswald', sans-serif; font-size: 1.5rem; color: #004A94; margin: 0 0 0.5rem 0; }
+        .activas-header p { color: #666; margin: 0; }
+        .btn-export { padding: 0.75rem 1.5rem; background: #12b86f; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-export:hover { background: #10a55f; transform: translateY(-2px); }
+        .activas-list { display: grid; gap: 1rem; }
+        .activa-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); border-left: 4px solid #12b86f; overflow: hidden; }
+        .activa-header { padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: flex-start; }
+        .activa-header h3 { font-family: 'Oswald', sans-serif; font-size: 1.1rem; margin: 0; color: #333; }
+        .activa-body { padding: 1.5rem; }
+        .activa-grid { display: grid; gap: 0.75rem; }
+        .info-row { display: grid; grid-template-columns: 150px 1fr; gap: 1rem; }
+        .info-row .label { font-weight: 600; color: #666; font-size: 0.9rem; }
+        .info-row .value { color: #333; }
+        .info-row .deadline { color: #f59e0b; }
+        .activa-actions { display: flex; gap: 1rem; padding: 1rem; background: #f9fafb; border-top: 1px solid #eee; border-radius: 0 0 8px 8px; }
+        .btn-view { flex: 1; padding: 0.75rem 1rem; background: #004A94; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-view:hover { background: #003370; }
+        .btn-remove { flex: 1; padding: 0.75rem 1rem; background: #f3f4f6; color: #ef4444; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-remove:hover { background: #ef4444; color: white; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 768px) {
+          .view-switcher { flex-direction: column; }
+          .view-btn { border-bottom: none; border-right: 3px solid transparent; text-align: left; }
+          .view-btn.active { border-right-color: #004A94; border-bottom: none; }
+          .activas-header { flex-direction: column; }
+          .btn-export { width: 100%; }
+          .info-row { grid-template-columns: 1fr; }
+          .tender-info { grid-template-columns: 1fr; }
+          .activa-actions { flex-direction: column; }
+        }
       `}</style>
     </main>
   );
