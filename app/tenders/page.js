@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Search, Download, AlertCircle, Star, X } from 'lucide-react';
 
 const TendersPage = () => {
   const [tenders, setTenders] = useState([]);
@@ -9,120 +8,93 @@ const TendersPage = () => {
   const [language, setLanguage] = useState('es');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('all');
-  const [valueRange, setValueRange] = useState([0, 1000000]);
-  const [daysRemaining, setDaysRemaining] = useState(30);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('all'); // 'all' or 'saved'
-  const [sortBy, setSortBy] = useState('deadline'); // 'deadline' or 'value'
+  const [maxValue, setMaxValue] = useState(1000000);
+  const [maxDays, setMaxDays] = useState(365);
+  const [viewMode, setViewMode] = useState('all');
 
-  // Translations
   const t = {
     es: {
       title: 'Licitaciones de Agua',
-      subtitle: 'Procurement portal for Central America',
-      search: 'Buscar por título...',
+      search: 'Buscar...',
       filters: 'Filtros',
       country: 'País',
-      value: 'Valor',
+      value: 'Valor máx',
       deadline: 'Plazo',
-      viewAll: 'Todos',
-      viewSaved: 'Guardados',
-      sortBy: 'Ordenar por',
+      all: 'Todos',
+      saved: 'Guardados',
       mark: 'Guardar',
-      remove: 'Descartar',
+      remove: 'Remover',
       download: 'Descargar CSV',
       noResults: 'Sin resultados',
-      urgent: 'URGENTE',
+      view: 'Ver Licitación',
       days: 'días',
-      entity: 'Entidad',
-      viewTender: 'Ver Licitación',
-      marked: 'Guardado',
+      urgent: 'URGENTE',
     },
     en: {
       title: 'Water Tenders',
-      subtitle: 'Procurement portal for Central America',
-      search: 'Search by title...',
+      search: 'Search...',
       filters: 'Filters',
       country: 'Country',
-      value: 'Value',
+      value: 'Max Value',
       deadline: 'Deadline',
-      viewAll: 'All',
-      viewSaved: 'Saved',
-      sortBy: 'Sort by',
+      all: 'All',
+      saved: 'Saved',
       mark: 'Save',
       remove: 'Remove',
       download: 'Download CSV',
       noResults: 'No results',
-      urgent: 'URGENT',
+      view: 'View Tender',
       days: 'days',
-      entity: 'Entity',
-      viewTender: 'View Tender',
-      marked: 'Saved',
-    },
+      urgent: 'URGENT',
+    }
   };
 
-  const strings = t[language];
+  const str = t[language];
 
-  // Load tenders on mount
   useEffect(() => {
-    const loadTenders = async () => {
+    const loadData = async () => {
       try {
         const res = await fetch('/central-america-tenders-live.json');
         const data = await res.json();
-        
         const allTenders = [];
+        
         Object.entries(data.countries).forEach(([key, country]) => {
-          country.tenders?.forEach((tender) => {
-            allTenders.push({
-              ...tender,
-              pais: key,
-              flag: country.flag,
+          if (country.tenders && Array.isArray(country.tenders)) {
+            country.tenders.forEach((tender) => {
+              allTenders.push({
+                ...tender,
+                pais: key,
+                flag: country.flag,
+              });
             });
-          });
+          }
         });
         
         setTenders(allTenders);
-      } catch (error) {
-        console.error('Error loading tenders:', error);
-      } finally {
-        setLoading(false);
+      } catch (e) {
+        console.error('Error loading tenders:', e);
       }
     };
 
-    loadTenders();
-
-    // Load saved from localStorage
-    const savedIds = JSON.parse(localStorage.getItem('savedTenderIds') || '[]');
-    setSaved(savedIds);
+    loadData();
+    const saved = JSON.parse(localStorage.getItem('savedTenderIds') || '[]');
+    setSaved(saved);
   }, []);
 
-  // Filter and sort logic
-  const filtered = tenders.filter((tender) => {
-    const matchSearch = tender.titulo?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchCountry = selectedCountry === 'all' || tender.pais === selectedCountry;
-    const matchValue = parseInt(tender.valor) >= valueRange[0] && parseInt(tender.valor) <= valueRange[1];
+  // Filter logic
+  const filtered = tenders.filter((t) => {
+    const matchSearch = !searchTerm || t.titulo?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchCountry = selectedCountry === 'all' || t.pais === selectedCountry;
+    const valor = parseInt(t.valor) || 0;
+    const matchValue = valor <= maxValue;
+    const matchDays = (t.dias_restantes || 365) <= maxDays;
     
-    let matchDeadline = true;
-    if (tender.dias_restantes !== undefined) {
-      matchDeadline = tender.dias_restantes <= daysRemaining;
-    }
-
-    return matchSearch && matchCountry && matchValue && matchDeadline;
+    return matchSearch && matchCountry && matchValue && matchDays;
   });
 
-  const displayTenders = viewMode === 'saved' 
+  const displayed = viewMode === 'saved' 
     ? filtered.filter(t => saved.includes(t.numero))
     : filtered;
-
-  const sorted = [...displayTenders].sort((a, b) => {
-    if (sortBy === 'deadline') {
-      const aDate = new Date(a.deadline);
-      const bDate = new Date(b.deadline);
-      return aDate - bDate;
-    } else {
-      return parseInt(b.valor) - parseInt(a.valor);
-    }
-  });
 
   const toggleSave = (numero) => {
     const updated = saved.includes(numero)
@@ -133,327 +105,343 @@ const TendersPage = () => {
   };
 
   const downloadCSV = () => {
-    const headers = ['País', 'Licitación', 'Título', 'Valor', 'Plazo', 'Entidad'];
-    const rows = sorted.map(t => [
+    const rows = displayed.map(t => [
       t.flag || t.pais,
       t.numero,
-      t.titulo,
+      t.titulo?.substring(0, 60),
       t.valor || 'N/A',
       t.deadline,
       t.entidad,
     ]);
-
     const csv = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
-    ].join('\n');
-
+      ['País', 'Licitación', 'Título', 'Valor', 'Plazo', 'Entidad'],
+      ...rows
+    ].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    
     const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `licitaciones-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `licitaciones-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+    <div style={{ backgroundColor: '#1a1f36', minHeight: '100vh', color: '#fff' }}>
       {/* Header */}
-      <header className="bg-slate-950 border-b border-slate-700 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h1 className="text-4xl font-bold text-white mb-1">
-                🌊 {strings.title}
-              </h1>
-              <p className="text-slate-400 text-sm">{strings.subtitle}</p>
-            </div>
-            
-            <div className="flex gap-2">
-              <button
-                onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
-                className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition"
-              >
-                {language === 'es' ? 'EN' : 'ES'}
-              </button>
-              <div className="px-4 py-2 bg-blue-600/20 text-blue-300 rounded-lg border border-blue-600">
-                ⭐ {saved.length}
-              </div>
-            </div>
+      <header style={{ backgroundColor: '#0f1419', borderBottom: '1px solid #334466', padding: '16px', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>🌊 {str.title}</h1>
+            <button 
+              onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
+              style={{ padding: '8px 16px', backgroundColor: '#334466', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer' }}
+            >
+              {language === 'es' ? 'EN' : 'ES'}
+            </button>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-3 text-slate-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder={strings.search}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
+          {/* Search */}
+          <input
+            type="text"
+            placeholder={str.search}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: '#222d47',
+              border: '1px solid #334466',
+              borderRadius: '6px',
+              color: '#fff',
+              fontSize: '14px',
+              boxSizing: 'border-box'
+            }}
+          />
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar Filters */}
-          <aside className="lg:col-span-1">
-            <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 sticky top-24">
-              <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                <ChevronDown className="w-4 h-4" />
-                {strings.filters}
-              </h2>
+      {/* Main */}
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px' }}>
+        {/* Filters - Mobile stacked */}
+        <div style={{ 
+          backgroundColor: '#222d47', 
+          border: '1px solid #334466', 
+          borderRadius: '8px', 
+          padding: '16px',
+          marginBottom: '24px'
+        }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px', marginTop: 0 }}>
+            ⚙️ {str.filters}
+          </h2>
 
-              {/* Country Filter */}
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-slate-300 mb-3">
-                  {strings.country}
-                </label>
-                <select
-                  value={selectedCountry}
-                  onChange={(e) => setSelectedCountry(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-                >
-                  <option value="all">Todas las regiones</option>
-                  <option value="panama">🇵🇦 Panama</option>
-                  <option value="costa_rica">🇨🇷 Costa Rica</option>
-                  <option value="nicaragua">🇳🇮 Nicaragua</option>
-                  <option value="el_salvador">🇸🇻 El Salvador</option>
-                </select>
-              </div>
-
-              {/* Value Range */}
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-slate-300 mb-3">
-                  {strings.value}: ${valueRange[1].toLocaleString()}
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1000000"
-                  step="50000"
-                  value={valueRange[1]}
-                  onChange={(e) => setValueRange([0, parseInt(e.target.value)])}
-                  className="w-full"
-                />
-                <div className="text-xs text-slate-400 mt-2">Hasta ${valueRange[1].toLocaleString()}</div>
-              </div>
-
-              {/* Days Remaining */}
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-slate-300 mb-3">
-                  {strings.deadline}: ≤ {daysRemaining} {strings.days}
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="365"
-                  value={daysRemaining}
-                  onChange={(e) => setDaysRemaining(parseInt(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Sort */}
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-slate-300 mb-3">
-                  {strings.sortBy}
-                </label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-                >
-                  <option value="deadline">Por plazo</option>
-                  <option value="value">Por valor</option>
-                </select>
-              </div>
-
-              {/* View Mode Toggle */}
-              <div className="border-t border-slate-700 pt-6">
-                <div className="space-y-2">
-                  <button
-                    onClick={() => setViewMode('all')}
-                    className={`w-full px-4 py-2 rounded-lg transition text-sm font-medium ${
-                      viewMode === 'all'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                    }`}
-                  >
-                    🔍 {strings.viewAll}
-                  </button>
-                  <button
-                    onClick={() => setViewMode('saved')}
-                    className={`w-full px-4 py-2 rounded-lg transition text-sm font-medium ${
-                      viewMode === 'saved'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                    }`}
-                  >
-                    ⭐ {strings.viewSaved} ({saved.length})
-                  </button>
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          {/* Tenders Grid */}
-          <section className="lg:col-span-3">
-            {/* Results Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white">
-                {sorted.length} {sorted.length === 1 ? 'licitación' : 'licitaciones'}
-              </h2>
-              {sorted.length > 0 && (
-                <button
-                  onClick={downloadCSV}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
-                >
-                  <Download className="w-4 h-4" />
-                  📥 {strings.download}
-                </button>
-              )}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            {/* Country */}
+            <div>
+              <label style={{ fontSize: '12px', color: '#aaa', display: 'block', marginBottom: '6px' }}>
+                {str.country}
+              </label>
+              <select
+                value={selectedCountry}
+                onChange={(e) => setSelectedCountry(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  backgroundColor: '#1a1f36',
+                  border: '1px solid #334466',
+                  borderRadius: '4px',
+                  color: '#fff',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="all">Todas</option>
+                <option value="panama">🇵🇦 Panama</option>
+                <option value="costa_rica">🇨🇷 Costa Rica</option>
+                <option value="nicaragua">🇳🇮 Nicaragua</option>
+              </select>
             </div>
 
-            {/* Empty State */}
-            {loading && (
-              <div className="col-span-3 py-16 text-center">
-                <div className="inline-block p-3 bg-slate-700 rounded-full mb-4">
-                  <div className="animate-spin">⏳</div>
+            {/* Value */}
+            <div>
+              <label style={{ fontSize: '12px', color: '#aaa', display: 'block', marginBottom: '6px' }}>
+                {str.value}: ${(maxValue/1000).toFixed(0)}K
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="1000000"
+                step="50000"
+                value={maxValue}
+                onChange={(e) => setMaxValue(parseInt(e.target.value))}
+                style={{ width: '100%', cursor: 'pointer' }}
+              />
+            </div>
+
+            {/* Days */}
+            <div>
+              <label style={{ fontSize: '12px', color: '#aaa', display: 'block', marginBottom: '6px' }}>
+                {str.deadline}: ≤ {maxDays} {str.days}
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="365"
+                value={maxDays}
+                onChange={(e) => setMaxDays(parseInt(e.target.value))}
+                style={{ width: '100%', cursor: 'pointer' }}
+              />
+            </div>
+
+            {/* View Toggle */}
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setViewMode('all')}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  backgroundColor: viewMode === 'all' ? '#0066cc' : '#334466',
+                  border: 'none',
+                  borderRadius: '4px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                🔍 {str.all}
+              </button>
+              <button
+                onClick={() => setViewMode('saved')}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  backgroundColor: viewMode === 'saved' ? '#0066cc' : '#334466',
+                  border: 'none',
+                  borderRadius: '4px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                ⭐ {str.saved} ({saved.length})
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Results */}
+        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>
+            {displayed.length} {displayed.length === 1 ? 'licitación' : 'licitaciones'}
+          </h2>
+          {displayed.length > 0 && (
+            <button
+              onClick={downloadCSV}
+              style={{
+                padding: '10px 16px',
+                backgroundColor: '#10b981',
+                border: 'none',
+                borderRadius: '6px',
+                color: '#fff',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              📥 {str.download}
+            </button>
+          )}
+        </div>
+
+        {/* Empty State */}
+        {displayed.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '32px 16px', color: '#aaa' }}>
+            {str.noResults}
+          </div>
+        )}
+
+        {/* Tender Cards - Mobile responsive grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+          gap: '16px'
+        }}>
+          {displayed.map((tender) => {
+            const isUrgent = tender.dias_restantes < 7;
+            const isSaved = saved.includes(tender.numero);
+
+            return (
+              <article
+                key={tender.numero}
+                style={{
+                  backgroundColor: '#222d47',
+                  border: isUrgent ? '2px solid #ff4444' : '1px solid #334466',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}
+              >
+                {/* Card Header */}
+                <div style={{
+                  padding: '12px',
+                  borderBottom: '1px solid #334466',
+                  backgroundColor: isUrgent ? 'rgba(255, 68, 68, 0.1)' : 'transparent'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, lineHeight: '1.3' }}>
+                      {tender.titulo?.substring(0, 50)}...
+                    </h3>
+                    {isUrgent && (
+                      <span style={{ 
+                        backgroundColor: '#ff4444', 
+                        color: '#fff', 
+                        padding: '2px 6px', 
+                        borderRadius: '3px',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        ⚠️ {str.urgent}
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ fontSize: '11px', color: '#888', margin: 0 }}>
+                    {tender.flag} {tender.numero}
+                  </p>
                 </div>
-                <p className="text-slate-400">Cargando licitaciones...</p>
-              </div>
-            )}
 
-            {!loading && sorted.length === 0 && (
-              <div className="py-16 text-center">
-                <AlertCircle className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-                <p className="text-slate-400">{strings.noResults}</p>
-              </div>
-            )}
-
-            {/* Tender Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {sorted.map((tender) => {
-                const isUrgent = tender.dias_restantes < 7;
-                const isSaved = saved.includes(tender.numero);
-
-                return (
-                  <article
-                    key={tender.numero}
-                    className={`bg-slate-800 border rounded-xl overflow-hidden transition hover:shadow-lg ${
-                      isUrgent
-                        ? 'border-red-500/50 shadow-lg shadow-red-500/10'
-                        : 'border-slate-700 hover:border-slate-600'
-                    }`}
-                  >
-                    {/* Card Header with Urgency */}
-                    <div className={`px-6 py-4 border-b ${
-                      isUrgent ? 'bg-red-950/20 border-red-500/30' : 'border-slate-700'
-                    }`}>
-                      <div className="flex justify-between items-start gap-4 mb-3">
-                        <div>
-                          <h3 className="text-lg font-bold text-white leading-snug mb-2">
-                            {tender.titulo?.substring(0, 60)}...
-                          </h3>
-                          <p className="text-xs text-slate-400">
-                            {tender.flag} {tender.numero}
-                          </p>
-                        </div>
-                        {isUrgent && (
-                          <span className="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-full whitespace-nowrap">
-                            ⚠️ {strings.urgent}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Quick Save Button in Header */}
-                      <button
-                        onClick={() => toggleSave(tender.numero)}
-                        className={`flex items-center gap-2 text-sm font-medium transition ${
-                          isSaved
-                            ? 'text-yellow-400'
-                            : 'text-slate-400 hover:text-yellow-400'
-                        }`}
-                      >
-                        <Star className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
-                        {isSaved ? strings.marked : strings.mark}
-                      </button>
+                {/* Card Body */}
+                <div style={{ padding: '12px', flex: 1 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                    <div>
+                      <p style={{ fontSize: '10px', color: '#888', margin: 0, marginBottom: '4px', textTransform: 'uppercase' }}>Valor</p>
+                      <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#0066cc', margin: 0 }}>
+                        ${parseInt(tender.valor || 0).toLocaleString()}
+                      </p>
                     </div>
-
-                    {/* Card Body */}
-                    <div className="px-6 py-4">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="text-xs text-slate-500 uppercase font-semibold mb-1">
-                              {strings.value}
-                            </p>
-                            <p className="text-xl font-bold text-blue-400">
-                              ${parseInt(tender.valor).toLocaleString()}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-slate-500 uppercase font-semibold mb-1">
-                              {strings.deadline}
-                            </p>
-                            <p className="text-sm font-semibold text-white">
-                              {tender.deadline}
-                            </p>
-                            {tender.dias_restantes && (
-                              <p className={`text-xs mt-1 ${
-                                isUrgent ? 'text-red-400 font-bold' : 'text-slate-400'
-                              }`}>
-                                {tender.dias_restantes} {strings.days}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="pt-3 border-t border-slate-700">
-                          <p className="text-xs text-slate-500 uppercase font-semibold mb-1">
-                            {strings.entity}
-                          </p>
-                          <p className="text-sm text-slate-300">{tender.entidad}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card Footer CTA */}
-                    <div className="px-6 py-4 border-t border-slate-700 bg-slate-900/50">
-                      {tender.url && tender.url !== 'javascript:void(0)' ? (
-                        <a
-                          href={tender.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block w-full text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
-                        >
-                          🔗 {strings.viewTender}
-                        </a>
-                      ) : (
-                        <button className="w-full px-4 py-2 bg-slate-700 text-slate-400 cursor-not-allowed rounded-lg">
-                          {strings.viewTender}
-                        </button>
+                    <div>
+                      <p style={{ fontSize: '10px', color: '#888', margin: 0, marginBottom: '4px', textTransform: 'uppercase' }}>Plazo</p>
+                      <p style={{ fontSize: '12px', fontWeight: 'bold', margin: 0 }}>
+                        {tender.deadline}
+                      </p>
+                      {tender.dias_restantes && (
+                        <p style={{ fontSize: '11px', color: isUrgent ? '#ff4444' : '#aaa', margin: 0, marginTop: '2px' }}>
+                          {tender.dias_restantes} {str.days}
+                        </p>
                       )}
                     </div>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid #334466', paddingTop: '8px' }}>
+                    <p style={{ fontSize: '10px', color: '#888', margin: 0, marginBottom: '4px', textTransform: 'uppercase' }}>Entidad</p>
+                    <p style={{ fontSize: '12px', margin: 0, color: '#ccc' }}>{tender.entidad}</p>
+                  </div>
+                </div>
+
+                {/* Card Footer */}
+                <div style={{ padding: '12px', borderTop: '1px solid #334466', backgroundColor: '#1a1f36' }}>
+                  <button
+                    onClick={() => toggleSave(tender.numero)}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      marginBottom: '8px',
+                      backgroundColor: isSaved ? '#fbbf24' : '#334466',
+                      border: 'none',
+                      borderRadius: '4px',
+                      color: isSaved ? '#000' : '#fff',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: '14px'
+                    }}
+                  >
+                    {isSaved ? '⭐ ' : '☆ '} {isSaved ? str.remove : str.mark}
+                  </button>
+
+                  {tender.url && tender.url !== 'javascript:void(0)' ? (
+                    <a
+                      href={tender.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'block',
+                        padding: '10px',
+                        backgroundColor: '#0066cc',
+                        border: 'none',
+                        borderRadius: '4px',
+                        color: '#fff',
+                        textDecoration: 'none',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '14px'
+                      }}
+                    >
+                      🔗 {str.view}
+                    </a>
+                  ) : (
+                    <button
+                      disabled
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        padding: '10px',
+                        backgroundColor: '#334466',
+                        border: 'none',
+                        borderRadius: '4px',
+                        color: '#888',
+                        cursor: 'not-allowed',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      {str.view}
+                    </button>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="bg-slate-950 border-t border-slate-700 mt-16 py-8">
-        <div className="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
-          <p>Advance IDAN — Central America Water Procurement Portal</p>
-          <p className="mt-2">Last updated: {new Date().toLocaleDateString()}</p>
-        </div>
-      </footer>
     </div>
   );
 };

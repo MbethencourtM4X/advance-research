@@ -140,23 +140,19 @@
       "flag": "🇨🇷",
       "name": "Costa Rica",
       "source": "sicop.go.cr",
-      "last_update": "2026-04-25T06:30:00Z",
+      "last_update": "2026-04-25T14:04:57.433Z",
       "tenders": [
         {
-          "id": "2026LE-000003-0025700001",
           "numero": "2026LE-000003-0025700001",
-          "titulo": "LICITACIÓN MENOR - Manejo de aguas y estructuras conexas - Red vial Siquirres",
+          "titulo": "[LE] LICITACIÓN MENOR CON ENTREGA SEGÚN DEMANDA PARA MANEJO DE AGUAS Y ESTRUCTURAS CONEXAS, DE LA INFRAESTRUCTURA DE LA RED VIAL DEL CANTÓN DE SIQUIRRES",
           "valor": "N/A",
-          "moneda": "CRC",
-          "deadline": "2026-05-06",
-          "dias_restantes": 11,
+          "deadline": "06/05/2026 17:15",
           "entidad": "MUNICIPALIDAD DE SIQUIRRES",
-          "estado": "ABIERTA",
-          "categoria": "agua",
-          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders",
-          "pais": "costa_rica"
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders"
         }
-      ]
+      ],
+      "total_searched": 10,
+      "note": "SICOP returned 10 tenders, filtered for agua/acueducto/alcantarillado keywords"
     },
     "nicaragua": {
       "flag": "🇳🇮",
