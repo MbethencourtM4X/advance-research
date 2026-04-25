@@ -120,9 +120,23 @@ export default function TendersPage() {
   const filtered = getFilteredTenders();
   const urgentCount = filtered.filter(t => t.daysRemaining < 7).length;
 
-  // Helper function to build búsqueda pliego link with tender number
-  const getBusquedaPliegoUrl = (tenderNumber) => {
-    return `https://www.panamacompra.gob.pa/inicio/portal-interno/#/proceso/busqueda-avanzada?numero=${encodeURIComponent(tenderNumber)}`;
+  // Create a form that submits to panamacompra with pre-filled número
+  const handleSearchPliego = (tenderNumber) => {
+    // Create hidden form and submit
+    const form = document.createElement('form');
+    form.method = 'GET';
+    form.action = 'https://www.panamacompra.gob.pa/inicio/portal-interno/#/proceso/busqueda-avanzada';
+    form.target = '_blank';
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'numero';
+    input.value = tenderNumber;
+    
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
   };
 
   return (
@@ -289,14 +303,12 @@ export default function TendersPage() {
                   </div>
 
                   <div className="tender-cta">
-                    <a 
-                      href={getBusquedaPliegoUrl(tender.fullId)}
-                      target="_blank" 
-                      rel="noopener noreferrer"
+                    <button 
+                      onClick={() => handleSearchPliego(tender.fullId)}
                       className="btn-link"
                     >
                       📄 Ver Pliego: {tender.fullId}
-                    </a>
+                    </button>
                   </div>
                 </div>
 
@@ -375,7 +387,7 @@ export default function TendersPage() {
                     </div>
 
                     <div className="pliego-note">
-                      ℹ️ Haz clic en "Ver Pliego" arriba para acceder a la búsqueda de pliego de cargos oficial
+                      ℹ️ Haz clic en "Ver Pliego" arriba para acceder a la búsqueda de pliego de cargos. El número ya estará pre-llenado.
                     </div>
                   </div>
                 </div>
@@ -468,7 +480,7 @@ export default function TendersPage() {
         .info-item .days { font-size: 0.85rem; color: var(--text-secondary); }
         .info-item .category { text-transform: capitalize; color: var(--primary); font-weight: 600; }
         .tender-cta { margin-bottom: 0; }
-        .btn-link { display: inline-block; padding: 0.75rem 1.5rem; background: var(--primary); color: white; border-radius: 6px; text-decoration: none; font-weight: 600; transition: all 0.2s; font-size: 0.9rem; }
+        .btn-link { display: inline-block; padding: 0.75rem 1.5rem; background: var(--primary); color: white; border-radius: 6px; text-decoration: none; font-weight: 600; transition: all 0.2s; font-size: 0.9rem; border: none; cursor: pointer; }
         .btn-link:hover { background: #003370; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 74, 148, 0.25); }
         
         /* PLIEGO ALWAYS VISIBLE */
