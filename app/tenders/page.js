@@ -10,6 +10,7 @@ import TenderModal from './components/TenderModal';
 import EmptyState from './components/EmptyState';
 import LoadingSkeleton from './components/LoadingSkeleton';
 import { useToast, ToastContainer } from './components/Toast';
+import { exportTendersXLSX } from './utils/exportXLSX';
 
 const STRINGS = {
   es: {
@@ -26,6 +27,7 @@ const STRINGS = {
     save: 'Guardar',
     remove: 'Remover',
     download: 'Descargar CSV',
+    downloadXLSX: 'Descargar Excel',
     noResults: 'Sin resultados',
     noResultsHint: 'Intenta ampliar los filtros o cambiar la búsqueda',
     noSaved: 'No hay guardados',
@@ -64,6 +66,7 @@ const STRINGS = {
     save: 'Save',
     remove: 'Remove',
     download: 'Download CSV',
+    downloadXLSX: 'Download Excel',
     noResults: 'No results',
     noResultsHint: 'Try broadening your filters or changing the search',
     noSaved: 'No saved tenders',
@@ -168,7 +171,24 @@ export default function TendersPage() {
     URL.revokeObjectURL(url);
   };
 
+  // JSON-LD for this page
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    name: 'Licitaciones de Agua — Centroamérica',
+    description: 'Base de datos de licitaciones activas de agua potable, acueductos y saneamiento en Panamá, Costa Rica, Nicaragua y El Salvador.',
+    url: 'https://advance-idan-research.vercel.app/tenders',
+    creator: { '@type': 'Organization', name: 'Somos Advance' },
+    dateModified: lastUpdated || new Date().toISOString(),
+    keywords: 'licitaciones agua Panama, IDAAN, SICOP Costa Rica, SISCAE Nicaragua, water tender',
+  };
+
   return (
+    <>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
     <div style={{ backgroundColor: '#151b2e', minHeight: '100vh', color: '#e8eaf0' }}>
       {/* Header */}
       <header style={{
@@ -215,21 +235,38 @@ export default function TendersPage() {
             </p>
           )}
           {!loading && filtered.length > 0 && (
-            <button
-              onClick={downloadCSV}
-              style={{
-                padding: '8px 14px',
-                backgroundColor: '#0d4f30',
-                border: '1px solid #1a8f57',
-                borderRadius: '6px',
-                color: '#7ec89e',
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '12px',
-              }}
-            >
-              📥 {str.download}
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={downloadCSV}
+                style={{
+                  padding: '8px 14px',
+                  backgroundColor: '#0d4f30',
+                  border: '1px solid #1a8f57',
+                  borderRadius: '6px',
+                  color: '#7ec89e',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '12px',
+                }}
+              >
+                📥 CSV
+              </button>
+              <button
+                onClick={() => exportTendersXLSX(filtered, language)}
+                style={{
+                  padding: '8px 14px',
+                  backgroundColor: '#0d3a4f',
+                  border: '1px solid #1a6a8f',
+                  borderRadius: '6px',
+                  color: '#7ebec8',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '12px',
+                }}
+              >
+                📊 Excel
+              </button>
+            </div>
           )}
         </div>
 
@@ -280,5 +317,6 @@ export default function TendersPage() {
       {/* Toasts */}
       <ToastContainer toasts={toasts} />
     </div>
+    </>
   );
 }
