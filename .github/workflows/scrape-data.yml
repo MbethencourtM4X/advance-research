@@ -2,7 +2,7 @@ name: Scrape Central America Tenders
 
 on:
   schedule:
-    # Run 4x daily at 06:00, 06:30, 07:00, 08:00 AST (UTC-4 = 10:00, 10:30, 11:00, 12:00 UTC)
+    # 4x daily at 06:00, 06:30, 07:00, 08:00 AST (UTC-4)
     - cron: '0 10 * * *'
     - cron: '30 10 * * *'
     - cron: '0 11 * * *'
@@ -13,6 +13,10 @@ on:
         description: 'Country to scrape (all | nicaragua | costa_rica | panama)'
         required: false
         default: 'all'
+      use_playwright:
+        description: 'Force Playwright fallback (true | false)'
+        required: false
+        default: 'false'
 
 permissions:
   contents: write
@@ -20,7 +24,7 @@ permissions:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -32,24 +36,48 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      - name: Scrape Nicaragua (SISCAE)
-        if: ${{ github.event.inputs.country == 'all' || github.event.inputs.country == 'nicaragua' || github.event_name == 'schedule' }}
-        run: node scripts/scrape-nicaragua.js
-        env:
-          NODE_ENV: production
-        continue-on-error: true  # Don't fail the whole job if one country fails
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+        if: ${{ github.event.inputs.use_playwright == 'true' }}
 
-      - name: Scrape Costa Rica (SICOP)
-        if: ${{ github.event.inputs.country == 'all' || github.event.inputs.country == 'costa_rica' || github.event_name == 'schedule' }}
-        run: node scripts/scrape-costa-rica.js
-        env:
-          NODE_ENV: production
+      # ── Nicaragua ─────────────────────────────────────────────────────────
+      - name: Scrape Nicaragua API (SISCAE)
+        if: ${{ (github.event.inputs.country == 'all' || github.event.inputs.country == 'nicaragua' || github.event_name == 'schedule') && github.event.inputs.use_playwright != 'true' }}
+        id: scrape_nic_api
+        run: node scripts/scrape-nicaragua.js
         continue-on-error: true
 
+      - name: Install Playwright for Nicaragua fallback
+        if: ${{ steps.scrape_nic_api.outcome == 'failure' }}
+        run: npx playwright install chromium --with-deps
+
+      - name: Scrape Nicaragua Playwright (fallback)
+        if: ${{ steps.scrape_nic_api.outcome == 'failure' || github.event.inputs.use_playwright == 'true' }}
+        run: node scripts/scrape-nicaragua-playwright.js
+        continue-on-error: true
+
+      # ── Costa Rica ────────────────────────────────────────────────────────
+      - name: Scrape Costa Rica API (SICOP)
+        if: ${{ (github.event.inputs.country == 'all' || github.event.inputs.country == 'costa_rica' || github.event_name == 'schedule') && github.event.inputs.use_playwright != 'true' }}
+        id: scrape_cr_api
+        run: node scripts/scrape-costa-rica.js
+        continue-on-error: true
+
+      - name: Install Playwright for CR fallback
+        if: ${{ steps.scrape_cr_api.outcome == 'failure' && steps.scrape_nic_api.outcome != 'failure' }}
+        run: npx playwright install chromium --with-deps
+
+      - name: Scrape Costa Rica Playwright (fallback)
+        if: ${{ steps.scrape_cr_api.outcome == 'failure' || github.event.inputs.use_playwright == 'true' }}
+        run: node scripts/scrape-costa-rica-playwright.js
+        continue-on-error: true
+
+      # ── Commit ────────────────────────────────────────────────────────────
       - name: Check for changes
         id: changes
         run: |
@@ -65,23 +93,27 @@ jobs:
           git commit -m "data: auto-update tenders [$TIMESTAMP]"
           git push
 
-      - name: No changes
+      - name: No changes detected
         if: steps.changes.outputs.changed == 'false'
-        run: echo "No new tender data — no commit needed."
+        run: echo "✓ No new tender data — no commit needed."
 
-      - name: Summary
+      - name: Workflow summary
         if: always()
         run: |
-          echo "## Scrape Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- Run time: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "## Scrape Summary — $(date -u)" >> $GITHUB_STEP_SUMMARY
           python3 -c "
-          import json
-          with open('public/central-america-tenders-live.json') as f:
-              d = json.load(f)
-          print('| Country | Tenders |')
-          print('|---|---|')
-          for k, v in d.get('countries', {}).items():
-              n = len(v.get('tenders', []))
-              print(f'| {v.get(\"flag\",\"\")} {k} | {n} |')
-          print(f'\\nTimestamp: {d.get(\"timestamp\",\"\")}')
+          import json, sys
+          try:
+              with open('public/central-america-tenders-live.json') as f:
+                  d = json.load(f)
+              print('| Country | Tenders | Last Updated |')
+              print('|---|---|---|')
+              ts = d.get('timestamp', '')
+              for k, v in d.get('countries', {}).items():
+                  n = len(v.get('tenders', []))
+                  flag = v.get('flag', '')
+                  status = '✅' if n > 0 else '⏳'
+                  print(f'| {flag} {k} | {status} {n} | {ts[:10]} |')
+          except Exception as e:
+              print(f'Error reading data: {e}')
           " >> $GITHUB_STEP_SUMMARY
