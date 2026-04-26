@@ -1,6 +1,6 @@
 {
   "source": "multiple",
-  "timestamp": "2026-04-25T13:54:00Z",
+  "timestamp": "2026-04-26T11:09:04.636Z",
   "countries": {
     "panama": {
       "flag": "🇵🇦",
@@ -138,103 +138,56 @@
     },
     "costa_rica": {
       "flag": "🇨🇷",
-      "name": "Costa Rica",
-      "source": "sicop.go.cr",
-      "last_update": "2026-04-25T14:11:00.243Z",
       "tenders": [
         {
-          "numero": "2026LD-000021-0028300001",
-          "titulo": "[LD] PAGO DE INSCRIPCIONES POR DEMANDA PARA LA DISCIPLINA DE CICLISMO MONTAÑA PARACOPA NACIONAL 2026 47   Encargado de publicación, gestión de objeciones y apertura :  Luis Antonio Álvarez Chaves",
-          "entidad": "COMITÉ CANTONAL DE DEPORTES Y RECREACIÓN DE ALAJUELA",
-          "deadline": "02/05/2026 08:00",
+          "numero": "CR-0",
+          "titulo": "",
+          "entidad": "",
+          "deadline": "",
+          "dias_restantes": null,
           "valor": "N/A",
           "moneda": "CRC",
-          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LD-000021-0028300001"
+          "estado": "Activo",
+          "categoria": "",
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=CR-0"
         },
         {
-          "numero": "2026LD-000020-0028300001",
-          "titulo": "[LD] PAGO DE INSCRIPCIONES POR DEMANDA PARA LA DISCIPLINA DE TAEKWONDO PARA RANKINGS G20  46   Encargado de publicación, gestión de objeciones y apertura :  Luis Antonio Álvarez Chaves",
-          "entidad": "COMITÉ CANTONAL DE DEPORTES Y RECREACIÓN DE ALAJUELA",
-          "deadline": "02/05/2026 08:00",
+          "numero": "CR-1",
+          "titulo": "",
+          "entidad": "",
+          "deadline": "",
+          "dias_restantes": null,
           "valor": "N/A",
           "moneda": "CRC",
-          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LD-000020-0028300001"
+          "estado": "Activo",
+          "categoria": "",
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=CR-1"
         },
         {
-          "numero": "2026LY-000006-0007100001",
-          "titulo": "[LY] Compra de equipamiento de seguridad para trabajo en alturas   Encargado de publicación, gestión de objeciones y apertura :  MARYSOL CORDERO VENEGAS",
-          "entidad": "MINISTERIO DE SEGURIDAD PUBLICA",
-          "deadline": "26/05/2026 11:00",
+          "numero": "CR-2",
+          "titulo": "",
+          "entidad": "",
+          "deadline": "",
+          "dias_restantes": null,
           "valor": "N/A",
           "moneda": "CRC",
-          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LY-000006-0007100001"
+          "estado": "Activo",
+          "categoria": "",
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=CR-2"
         },
         {
-          "numero": "2026LY-000005-0007100001",
-          "titulo": "[LY] COMPRA DE MOTOCICLETAS, CUADRACICLOS Y AUTOMULAS   Encargado de publicación, gestión de objeciones y apertura :  MARYSOL CORDERO VENEGAS",
-          "entidad": "MINISTERIO DE SEGURIDAD PUBLICA",
-          "deadline": "26/05/2026 10:00",
+          "numero": "CR-3",
+          "titulo": "",
+          "entidad": "",
+          "deadline": "",
+          "dias_restantes": null,
           "valor": "N/A",
           "moneda": "CRC",
-          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LY-000005-0007100001"
-        },
-        {
-          "numero": "2026LE-000003-0025700001",
-          "titulo": "[LE] LICITACIÓN MENOR CON ENTREGA SEGÚN DEMANDA PARA MANEJO DE AGUAS Y ESTRUCTURAS CONEXAS, DE LA INFRAESTRUCTURA DE LA RED VIAL DEL CANTÓN DE SIQUIRRES   Encargado de publicación, gestión de objeciones y apertura :  LUCILA MAYORGA BALMACEDA",
-          "entidad": "MUNICIPALIDAD DE SIQUIRRES",
-          "deadline": "06/05/2026 17:15",
-          "valor": "N/A",
-          "moneda": "CRC",
-          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LE-000003-0025700001"
-        },
-        {
-          "numero": "2026LY-000002-0015800001",
-          "titulo": "[LY] Contratación de servicios para la preparación de alimentos en instalaciones del INAMU   Encargado de publicación, gestión de objeciones y apertura :  Allan Ramos Bolaños",
-          "entidad": "INSTITUTO NACIONAL DE LAS MUJERES",
-          "deadline": "20/05/2026 00:00",
-          "valor": "N/A",
-          "moneda": "CRC",
-          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LY-000002-0015800001"
-        },
-        {
-          "numero": "2026PX-000019-0041342028",
-          "titulo": "[PX] Capacitación Abierta-_WP1 Análisis de oscilografía en sistemas de potencia.   Encargado de publicación, gestión de objeciones y apertura :  Susana Quirós Gutiérrez",
-          "entidad": "EMPRESA DE SERVICIOS PÚBLICOS DE HEREDIA SOCIEDAD ANÓNIMA",
-          "deadline": "04/05/2026 07:01",
-          "valor": "N/A",
-          "moneda": "CRC",
-          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026PX-000019-0041342028"
-        },
-        {
-          "numero": "2026PX-000031-0014400001",
-          "titulo": "[PX] 3139 -  Curso:Automatización de Flujos de Trabajo con Power Automate- sincrónico   Encargado de publicación, gestión de objeciones y apertura :  GUILLERMO REYES GUTIERREZ",
-          "entidad": "INSTITUTO NACIONAL DE ESTADÍSTICA Y CENSOS",
-          "deadline": "29/04/2026 08:00",
-          "valor": "N/A",
-          "moneda": "CRC",
-          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026PX-000031-0014400001"
-        },
-        {
-          "numero": "2026LY-000002-0023100001",
-          "titulo": "[LY] Servicio de seguridad y vigilancia física para los diferentes inmuebles Municipales   Encargado de publicación, gestión de objeciones y apertura :  IVAN ALBERTO ZAMORA MONTOYA",
-          "entidad": "MUNICIPALIDAD DE CURRIDABAT",
-          "deadline": "19/05/2026 11:01",
-          "valor": "N/A",
-          "moneda": "CRC",
-          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LY-000002-0023100001"
-        },
-        {
-          "numero": "2026LD-000019-0028300001",
-          "titulo": "[LD] PAGO DE INSCRIPCIONES PARA LA DISCIPLINA DE GIMNASIA RITMICA LAS FLORES  36   Encargado de publicación, gestión de objeciones y apertura :  Luis Antonio Álvarez Chaves",
-          "entidad": "COMITÉ CANTONAL DE DEPORTES Y RECREACIÓN DE ALAJUELA",
-          "deadline": "02/05/2026 08:00",
-          "valor": "N/A",
-          "moneda": "CRC",
-          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=2026LD-000019-0028300001"
+          "estado": "Activo",
+          "categoria": "",
+          "url": "https://www.sicop.go.cr/app/module/bid/public/tenders?search=CR-3"
         }
-      ],
-      "total_searched": 10,
-      "note": "SICOP returned 10 tenders, filtered for agua/acueducto/alcantarillado keywords"
+      ]
     },
     "nicaragua": {
       "flag": "🇳🇮",
