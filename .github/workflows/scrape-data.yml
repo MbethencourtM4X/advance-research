@@ -2,8 +2,9 @@ name: Scrape Central America Tenders
 
 on:
   schedule:
-    # 4x daily at 06:00, 06:30, 07:00, 08:00 AST (UTC-4)
-    - cron: '0 10 * * *'
+    # weekday morning briefing — 06:00 AST (10:00 UTC) Mon–Fri
+    - cron: '0 10 * * 1-5'
+    # 3x additional daily runs at 06:30, 07:00, 08:00 AST (UTC-4)
     - cron: '30 10 * * *'
     - cron: '0 11 * * *'
     - cron: '0 12 * * *'
