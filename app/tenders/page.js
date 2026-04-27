@@ -11,6 +11,7 @@ import EmptyState from './components/EmptyState';
 import LoadingSkeleton from './components/LoadingSkeleton';
 import { useToast, ToastContainer } from './components/Toast';
 import { exportTendersXLSX } from './utils/exportXLSX';
+import { ACTIVE_KEYWORDS, matchesAdvanceKeywords } from '../../config/advance-keywords';
 
 const STRINGS = {
   es: {
@@ -127,6 +128,8 @@ export default function TendersPage() {
 
   const filtered = useMemo(() => {
     let result = tenders.filter((t) => {
+      // Municipal tenders must match Advance-relevant keywords
+      if (t.source_type === 'municipal' && !matchesAdvanceKeywords(t)) return false;
       if (searchTerm && !t.titulo?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
       if (selectedCountry !== 'all' && t.pais !== selectedCountry) return false;
       const val = parseFloat(t.valor) || 0;
@@ -137,6 +140,8 @@ export default function TendersPage() {
     if (viewMode === 'saved') result = result.filter((t) => isSaved(t.numero));
     return sortTenders(result, sortBy);
   }, [tenders, searchTerm, selectedCountry, maxValue, maxDays, viewMode, sortBy, saved]);
+
+  const hasMunicipal = tenders.some((t) => t.source_type === 'municipal');
 
   const handleToggleSave = (numero) => {
     const wasAdded = !isSaved(numero);
@@ -225,6 +230,23 @@ export default function TendersPage() {
           savedCount={saved.length}
           strings={str}
         />
+
+        {/* Municipal keyword filter notice — only shown when municipal sources are present */}
+        {hasMunicipal && (
+          <div style={{
+            marginBottom: '12px',
+            padding: '8px 12px',
+            backgroundColor: '#0d2d4a',
+            border: '1px solid #1a5276',
+            borderRadius: '6px',
+            fontSize: '12px',
+            color: '#7eb3c8',
+          }}>
+            {language === 'es'
+              ? `Licitaciones municipales filtradas por: ${ACTIVE_KEYWORDS.join(', ')}`
+              : `Municipal tenders filtered by: ${ACTIVE_KEYWORDS.join(', ')}`}
+          </div>
+        )}
 
         {/* Results bar */}
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

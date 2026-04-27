@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { NATIONAL_PORTAL_KEYS } from '../../../config/advance-keywords';
 
 function computeDaysRemaining(deadline) {
   if (!deadline) return null;
@@ -42,6 +43,7 @@ export function useTenders() {
               pais: key,
               flag: country.flag,
               dias_restantes: dias,
+              source_type: NATIONAL_PORTAL_KEYS.has(key) ? 'national' : 'municipal',
               _idx: idx,
             });
           });
