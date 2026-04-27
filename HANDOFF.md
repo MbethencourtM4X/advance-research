@@ -82,8 +82,11 @@ Improve, optimize, and expand the Advance IDAN Portal (procurement dashboard for
 ### 📁 Key Files
 - **App:** `app/tenders/page.js` (1000+ lines, inline CSS)
 - **Data:** `public/central-america-tenders-live.json`
-- **Config:** `next.config.js`, `package.json`
+- **Config:** `next.config.js`, `package.json`, `config/advance-keywords.js`
 - **Styles:** Inline CSS (no Tailwind)
+
+### 🔑 Municipal Tender Keyword Filter
+Advance only bids on tenders related to water systems and chemical reagents. Municipal-source tenders (any source key NOT in `NATIONAL_PORTAL_KEYS`) are filtered to only those matching `ACTIVE_KEYWORDS` in `config/advance-keywords.js` — currently `["agua", "reactivos"]`. National portals (PanamaCompra, SICOP, SISCAE, ANDA) are shown unfiltered. To add a keyword, move a candidate from the commented list in that file into `ACTIVE_KEYWORDS` after confirming with Miguel. The filter is currently a no-op since all data comes from national portals; it activates automatically when municipal sources are wired in.
 
 ---
 
