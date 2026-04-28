@@ -14,83 +14,67 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Create Tender session
-        id: create
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Anthropic SDK
+        run: pip install --quiet 'anthropic>=0.40.0'
+
+      - name: Create session and dispatch user.message
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           AGENT_ID: ${{ vars.TENDER_AGENT_ID }}
           ENVIRONMENT_ID: ${{ vars.TENDER_ENVIRONMENT_ID }}
           VAULT_ID: ${{ vars.TENDER_VAULT_ID }}
         run: |
-          set -euo pipefail
+          python <<'PY'
+          import os
+          import sys
+          import anthropic
 
-          : "${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY secret missing}"
-          : "${AGENT_ID:?TENDER_AGENT_ID variable missing}"
-          : "${ENVIRONMENT_ID:?TENDER_ENVIRONMENT_ID variable missing}"
-          : "${VAULT_ID:?TENDER_VAULT_ID variable missing}"
+          for k in ("ANTHROPIC_API_KEY", "AGENT_ID", "ENVIRONMENT_ID", "VAULT_ID"):
+              v = os.environ.get(k, "")
+              if not v:
+                  sys.exit(f"::error::{k} is missing")
+              # Surface any invisible chars from copy-paste so we catch them fast.
+              if v.strip() != v or any(ord(c) < 32 or ord(c) == 0x7f for c in v):
+                  print(f"::warning::{k} has whitespace or control chars: repr={v!r}")
 
-          # Body schema per https://platform.claude.com/docs/en/managed-agents/sessions
-          # Only 3 fields supported: agent, environment_id, vault_ids.
-          jq -nc \
-            --arg agent  "$AGENT_ID" \
-            --arg env_id "$ENVIRONMENT_ID" \
-            --arg vault  "$VAULT_ID" \
-            '{agent: $agent, environment_id: $env_id, vault_ids: [$vault]}' \
-            > payload.json
+          client = anthropic.Anthropic()
 
-          jq . payload.json
+          session = client.beta.sessions.create(
+              agent=os.environ["AGENT_ID"],
+              environment_id=os.environ["ENVIRONMENT_ID"],
+              vault_ids=[os.environ["VAULT_ID"]],
+          )
+          print(f"session.id = {session.id}")
+          print(f"session.status = {session.status}")
 
-          http_status=$(curl -sS -o response.json -w "%{http_code}" \
-            -X POST https://api.anthropic.com/v1/sessions \
-            -H "x-api-key: $ANTHROPIC_API_KEY" \
-            -H "anthropic-version: 2023-06-01" \
-            -H "anthropic-beta: managed-agents-2026-04-01" \
-            -H "content-type: application/json" \
-            --data-binary @payload.json)
+          client.beta.sessions.events.send(
+              session.id,
+              events=[{
+                  "type": "user.message",
+                  "content": [{
+                      "type": "text",
+                      "text": (
+                          "Run the scheduled Panama water-intelligence task. "
+                          "Pull active IDAAN tenders from PanamaCompra, normalize them, "
+                          "and update public/central-america-tenders-live.json in the "
+                          "MbethencourtM4X/advance-research repo via PR. Log notes to "
+                          "the Atlas Brain Obsidian vault under 02_Projects/Advance/."
+                      ),
+                  }],
+              }],
+          )
 
-          echo "HTTP $http_status"
-          jq . response.json || cat response.json
-
-          if [ "$http_status" -lt 200 ] || [ "$http_status" -ge 300 ]; then
-            echo "::error::Session creation failed (HTTP $http_status)"
-            exit 1
-          fi
-
-          session_id=$(jq -r '.id' response.json)
-          [ -n "$session_id" ] && [ "$session_id" != "null" ] || {
-            echo "::error::No session id in response"; exit 1;
-          }
-          echo "session_id=$session_id" >> "$GITHUB_OUTPUT"
-
-      - name: Send user.message (kick off scheduled run)
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          SESSION_ID: ${{ steps.create.outputs.session_id }}
-        run: |
-          set -euo pipefail
-
-          jq -nc \
-            '{events: [{type:"user.message", content:[{type:"text", text:"Run the scheduled Panama water-intelligence task. Pull active IDAAN tenders from PanamaCompra, normalize them, and update public/central-america-tenders-live.json in the Windmar-Home/advance-research repo via PR. Log notes to the Atlas Brain Obsidian vault under 02_Projects/Advance/."}]}]}' \
-            > event.json
-
-          http_status=$(curl -sS -o event_response.json -w "%{http_code}" \
-            -X POST "https://api.anthropic.com/v1/sessions/$SESSION_ID/events" \
-            -H "x-api-key: $ANTHROPIC_API_KEY" \
-            -H "anthropic-version: 2023-06-01" \
-            -H "anthropic-beta: managed-agents-2026-04-01" \
-            -H "content-type: application/json" \
-            --data-binary @event.json)
-
-          echo "HTTP $http_status"
-          jq . event_response.json || cat event_response.json
-
-          if [ "$http_status" -lt 200 ] || [ "$http_status" -ge 300 ]; then
-            echo "::error::Sending user.message failed (HTTP $http_status)"
-            exit 1
-          fi
-
-          {
-            echo "## Tender session dispatched"
-            echo "- session_id: \`$SESSION_ID\`"
-            echo "- dashboard: https://platform.claude.com/managed-agents/sessions/$SESSION_ID"
-          } >> "$GITHUB_STEP_SUMMARY"
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a") as f:
+                  f.write("## Tender session dispatched\n")
+                  f.write(f"- session_id: `{session.id}`\n")
+                  f.write(f"- status at create: `{session.status}`\n")
+                  f.write(
+                      f"- dashboard: https://platform.claude.com/managed-agents/sessions/{session.id}\n"
+                  )
+          PY
