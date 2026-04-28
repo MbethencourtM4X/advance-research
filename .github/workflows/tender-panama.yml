@@ -14,48 +14,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Start Tender session
+      - name: Create Tender session
+        id: create
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ATLAS_BRAIN_TOKEN: ${{ secrets.ATLAS_BRAIN_TOKEN }}
-          # GITHUB_TOKEN is auto-injected by GitHub Actions — rotated per run,
-          # scoped to this repo, no expiry to manage. Pass through to the agent.
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AGENT_ID: ${{ vars.TENDER_AGENT_ID }}
           ENVIRONMENT_ID: ${{ vars.TENDER_ENVIRONMENT_ID }}
           VAULT_ID: ${{ vars.TENDER_VAULT_ID }}
         run: |
           set -euo pipefail
 
-          : "${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY secret missing — set in repo Settings → Secrets and variables → Actions}"
-          : "${AGENT_ID:?TENDER_AGENT_ID variable missing — set in repo Settings → Secrets and variables → Actions → Variables}"
+          : "${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY secret missing}"
+          : "${AGENT_ID:?TENDER_AGENT_ID variable missing}"
           : "${ENVIRONMENT_ID:?TENDER_ENVIRONMENT_ID variable missing}"
           : "${VAULT_ID:?TENDER_VAULT_ID variable missing}"
 
-          jq -n \
-            --arg agent       "$AGENT_ID" \
-            --arg env_id      "$ENVIRONMENT_ID" \
-            --arg vault       "$VAULT_ID" \
-            --arg openai      "${OPENAI_API_KEY:-}" \
-            --arg gh          "$GH_TOKEN" \
-            --arg atlas       "${ATLAS_BRAIN_TOKEN:-}" \
-            '{
-              agent: $agent,
-              environment_id: $env_id,
-              vault_ids: [$vault],
-              metadata: {
-                trigger: "scheduled",
-                env: {
-                  OPENAI_API_KEY: $openai,
-                  GH_TOKEN: $gh,
-                  ATLAS_BRAIN_TOKEN: $atlas
-                }
-              }
-            }' > payload.json
+          # Body schema per https://platform.claude.com/docs/en/managed-agents/sessions
+          # Only 3 fields supported: agent, environment_id, vault_ids.
+          jq -nc \
+            --arg agent  "$AGENT_ID" \
+            --arg env_id "$ENVIRONMENT_ID" \
+            --arg vault  "$VAULT_ID" \
+            '{agent: $agent, environment_id: $env_id, vault_ids: [$vault]}' \
+            > payload.json
 
-          # Sanity-check the payload is valid JSON before sending; redact secrets in log.
-          jq 'del(.metadata.env)' payload.json
+          jq . payload.json
 
           http_status=$(curl -sS -o response.json -w "%{http_code}" \
             -X POST https://api.anthropic.com/v1/sessions \
@@ -69,13 +52,45 @@ jobs:
           jq . response.json || cat response.json
 
           if [ "$http_status" -lt 200 ] || [ "$http_status" -ge 300 ]; then
-            echo "::error::Tender session start failed (HTTP $http_status)"
+            echo "::error::Session creation failed (HTTP $http_status)"
             exit 1
           fi
 
-          session_id=$(jq -r '.id // .session_id // empty' response.json)
+          session_id=$(jq -r '.id' response.json)
+          [ -n "$session_id" ] && [ "$session_id" != "null" ] || {
+            echo "::error::No session id in response"; exit 1;
+          }
+          echo "session_id=$session_id" >> "$GITHUB_OUTPUT"
+
+      - name: Send user.message (kick off scheduled run)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SESSION_ID: ${{ steps.create.outputs.session_id }}
+        run: |
+          set -euo pipefail
+
+          jq -nc \
+            '{events: [{type:"user.message", content:[{type:"text", text:"Run the scheduled Panama water-intelligence task. Pull active IDAAN tenders from PanamaCompra, normalize them, and update public/central-america-tenders-live.json in the Windmar-Home/advance-research repo via PR. Log notes to the Atlas Brain Obsidian vault under 02_Projects/Advance/."}]}]}' \
+            > event.json
+
+          http_status=$(curl -sS -o event_response.json -w "%{http_code}" \
+            -X POST "https://api.anthropic.com/v1/sessions/$SESSION_ID/events" \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "anthropic-beta: managed-agents-2026-04-01" \
+            -H "content-type: application/json" \
+            --data-binary @event.json)
+
+          echo "HTTP $http_status"
+          jq . event_response.json || cat event_response.json
+
+          if [ "$http_status" -lt 200 ] || [ "$http_status" -ge 300 ]; then
+            echo "::error::Sending user.message failed (HTTP $http_status)"
+            exit 1
+          fi
+
           {
-            echo "## Tender session started"
-            echo "- HTTP: $http_status"
-            echo "- session_id: \`$session_id\`"
+            echo "## Tender session dispatched"
+            echo "- session_id: \`$SESSION_ID\`"
+            echo "- dashboard: https://platform.claude.com/managed-agents/sessions/$SESSION_ID"
           } >> "$GITHUB_STEP_SUMMARY"
