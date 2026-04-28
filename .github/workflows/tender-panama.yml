@@ -33,20 +33,28 @@ jobs:
           import sys
           import anthropic
 
-          for k in ("ANTHROPIC_API_KEY", "AGENT_ID", "ENVIRONMENT_ID", "VAULT_ID"):
-              v = os.environ.get(k, "")
+          # Defensive: strip whitespace/newlines from every input. Pasting into
+          # GitHub Settings often leaves a trailing \n which corrupts headers.
+          def clean(name: str) -> str:
+              v = os.environ.get(name, "")
               if not v:
-                  sys.exit(f"::error::{k} is missing")
-              # Surface any invisible chars from copy-paste so we catch them fast.
-              if v.strip() != v or any(ord(c) < 32 or ord(c) == 0x7f for c in v):
-                  print(f"::warning::{k} has whitespace or control chars: repr={v!r}")
+                  sys.exit(f"::error::{name} is missing")
+              cleaned = v.strip()
+              if cleaned != v or any(ord(c) < 32 or ord(c) == 0x7f for c in cleaned):
+                  print(f"::warning::{name} had whitespace/control chars; stripped")
+              return cleaned
 
-          client = anthropic.Anthropic()
+          api_key = clean("ANTHROPIC_API_KEY")
+          agent_id = clean("AGENT_ID")
+          environment_id = clean("ENVIRONMENT_ID")
+          vault_id = clean("VAULT_ID")
+
+          client = anthropic.Anthropic(api_key=api_key)
 
           session = client.beta.sessions.create(
-              agent=os.environ["AGENT_ID"],
-              environment_id=os.environ["ENVIRONMENT_ID"],
-              vault_ids=[os.environ["VAULT_ID"]],
+              agent=agent_id,
+              environment_id=environment_id,
+              vault_ids=[vault_id],
           )
           print(f"session.id = {session.id}")
           print(f"session.status = {session.status}")
