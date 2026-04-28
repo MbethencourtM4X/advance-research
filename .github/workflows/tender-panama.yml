@@ -1,0 +1,78 @@
+name: Tender — Panama Water Intelligence
+
+on:
+  schedule:
+    - cron: '0 11 * * 1-5'   # 06:00 AST = 11:00 UTC, Mon–Fri
+  workflow_dispatch:           # manual trigger for testing
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  run-tender:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Start Tender session
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ATLAS_BRAIN_TOKEN: ${{ secrets.ATLAS_BRAIN_TOKEN }}
+          # GITHUB_TOKEN is auto-injected by GitHub Actions — rotated per run,
+          # scoped to this repo, no expiry to manage. Pass through to the agent.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENT_ID: ${{ vars.TENDER_AGENT_ID }}
+          ENVIRONMENT_ID: ${{ vars.TENDER_ENVIRONMENT_ID }}
+          VAULT_ID: ${{ vars.TENDER_VAULT_ID }}
+        run: |
+          set -euo pipefail
+
+          : "${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY secret missing — set in repo Settings → Secrets and variables → Actions}"
+          : "${AGENT_ID:?TENDER_AGENT_ID variable missing — set in repo Settings → Secrets and variables → Actions → Variables}"
+          : "${ENVIRONMENT_ID:?TENDER_ENVIRONMENT_ID variable missing}"
+          : "${VAULT_ID:?TENDER_VAULT_ID variable missing}"
+
+          payload=$(jq -n \
+            --arg agent       "$AGENT_ID" \
+            --arg env_id      "$ENVIRONMENT_ID" \
+            --arg vault       "$VAULT_ID" \
+            --arg openai      "${OPENAI_API_KEY:-}" \
+            --arg gh          "$GH_TOKEN" \
+            --arg atlas       "${ATLAS_BRAIN_TOKEN:-}" \
+            '{
+              agent: $agent,
+              environment_id: $env_id,
+              vault_ids: [$vault],
+              metadata: {
+                trigger: "scheduled",
+                env: {
+                  OPENAI_API_KEY: $openai,
+                  GH_TOKEN: $gh,
+                  ATLAS_BRAIN_TOKEN: $atlas
+                }
+              }
+            }')
+
+          http_status=$(curl -sS -o response.json -w "%{http_code}" \
+            -X POST https://api.anthropic.com/v1/sessions \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "anthropic-beta: managed-agents-2026-04-01" \
+            -H "content-type: application/json" \
+            -d "$payload")
+
+          echo "HTTP $http_status"
+          jq . response.json || cat response.json
+
+          if [ "$http_status" -lt 200 ] || [ "$http_status" -ge 300 ]; then
+            echo "::error::Tender session start failed (HTTP $http_status)"
+            exit 1
+          fi
+
+          session_id=$(jq -r '.id // .session_id // empty' response.json)
+          {
+            echo "## Tender session started"
+            echo "- HTTP: $http_status"
+            echo "- session_id: \`$session_id\`"
+          } >> "$GITHUB_STEP_SUMMARY"
